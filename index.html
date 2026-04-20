@@ -1,0 +1,2651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广东麻将推倒胡练习</title>
+    <style>
+        :root {
+            --bg-primary: #0d3320;
+            --bg-secondary: #1a472a;
+            --bg-card: rgba(10,40,22,0.92);
+            --gold: #ffd700;
+            --green-light: #98fb98;
+            --green-dark: #28a745;
+            --red: #dc3545;
+            --wan-color: #c41e3a;
+            --tong-color: #228b22;
+            --suo-color: #4169e1;
+            --tile-border: #a08860;
+            --radius: 12px;
+            --radius-lg: 20px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            color: #e8e8e8;
+        }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 {
+            color: var(--gold); font-size: 2em;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+            letter-spacing: 4px;
+        }
+        .header .subtitle { color: var(--green-light); opacity: 0.8; margin-top: 4px; font-size: 0.95em; }
+
+        .game-area {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px; max-width: 960px; width: 100%;
+            border: 1px solid rgba(255,215,0,0.15);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+        }
+
+        /* ---- Tabs ---- */
+        .mode-tabs { display: flex; justify-content: center; margin-bottom: 20px; gap: 8px; }
+        .mode-tab {
+            padding: 10px 28px; border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 25px; background: transparent; color: var(--gold);
+            cursor: pointer; font-size: 15px; font-weight: 600;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+        .mode-tab:hover { background: rgba(255,215,0,0.1); }
+        .mode-tab.active {
+            background: linear-gradient(180deg, #ffd700, #ffb347);
+            color: var(--bg-primary); border-color: var(--gold);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+
+        /* ---- Buttons ---- */
+        .btn {
+            background: linear-gradient(180deg, #ffd700, #ffb347);
+            border: none; padding: 12px 32px; font-size: 16px;
+            font-weight: 700; color: var(--bg-primary); border-radius: 25px;
+            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.3); user-select: none;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .btn:active:not(:disabled) { transform: translateY(0); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.difficulty { padding: 8px 20px; font-size: 13px; }
+        .btn.difficulty.active {
+            background: linear-gradient(180deg, #28a745, #20c997);
+            color: white; box-shadow: 0 3px 12px rgba(40,167,69,0.4);
+        }
+        .btn.small { padding: 8px 18px; font-size: 13px; }
+        .btn.danger { background: linear-gradient(180deg, #dc3545, #c82333); color: white; }
+        .btn.ghost { background: transparent; color: var(--gold); border: 2px solid var(--gold); box-shadow: none; }
+        .btn.ghost:hover:not(:disabled) { background: rgba(255,215,0,0.15); }
+
+        /* ---- Info Bar ---- */
+        .info-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 12px; margin: 16px 0; padding: 12px 16px;
+            background: rgba(0,0,0,0.2); border-radius: var(--radius); font-size: 14px;
+        }
+        .tile-count-display { color: var(--green-light); }
+        .score-display { color: var(--gold); font-weight: 600; }
+        .action-row { display: flex; justify-content: center; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+
+        /* ---- Tiles ---- */
+        .tiles-container {
+            display: flex; justify-content: center; flex-wrap: wrap;
+            gap: 6px; margin: 16px 0; min-height: 90px;
+            align-items: flex-end; padding: 12px;
+            background: rgba(0,0,0,0.15); border-radius: var(--radius);
+        }
+        .tile {
+            width: 52px; height: 72px;
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border: 2px solid var(--tile-border); border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
+            position: relative; user-select: none;
+            will-change: transform;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .tile:hover { transform: translateY(-8px); z-index: 2; }
+        .tile.selected {
+            transform: translateY(-16px);
+            box-shadow: 0 12px 24px rgba(255,215,0,0.4);
+            border-color: var(--gold);
+        }
+        .tile.hint-glow {
+            box-shadow: 0 0 18px 6px rgba(255,215,0,0.7);
+            border-color: var(--gold);
+        }
+        .tile .tile-emoji { font-size: 28px; line-height: 1.1; }
+        .tile .tile-label { font-size: 11px; font-weight: 700; margin-top: 2px; }
+        .tile.wan { color: var(--wan-color); }
+        .tile.tong { color: var(--tong-color); }
+        .tile.suo { color: var(--suo-color); }
+        .tile-separator { width: 2px; height: 60px; background: rgba(255,215,0,0.3); border-radius: 2px; margin: 0 4px; align-self: center; }
+
+        /* ---- Tile Selector ---- */
+        .tile-selector { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 12px 0; }
+        .tile-btn {
+            width: 46px; height: 62px;
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border: 2px solid var(--tile-border); border-radius: 6px;
+            cursor: pointer; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; font-size: 22px;
+            transition: transform 0.12s ease; user-select: none;
+        }
+        .tile-btn:hover:not(:disabled) { transform: scale(1.08); }
+        .tile-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+        .tile-btn .tile-btn-label { font-size: 12px; font-weight: 700; }
+        .tile-btn.wan { color: var(--wan-color); }
+        .tile-btn.tong { color: var(--tong-color); }
+        .tile-btn.suo { color: var(--suo-color); }
+
+        /* ---- Analysis Panel ---- */
+        .analysis-panel {
+            background: rgba(255,255,255,0.97); border-radius: var(--radius-lg);
+            padding: 24px; margin-top: 20px; color: #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .analysis-title {
+            font-size: 1.2em; color: var(--bg-primary); margin-bottom: 14px;
+            border-bottom: 2px solid var(--gold); padding-bottom: 10px; font-weight: 700;
+        }
+        .result-item { margin: 12px 0; padding: 14px 16px; border-radius: 10px; }
+        .result-good { background: #d4edda; border-left: 4px solid var(--green-dark); }
+        .result-bad { background: #f8d7da; border-left: 4px solid var(--red); }
+        .result-neutral { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .close-call {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            padding: 12px 16px; border-radius: 10px; margin: 12px 0;
+            text-align: center; font-weight: 700; color: #856404; border: 1px solid #f0d060;
+        }
+        .structure-info { margin-top: 12px; padding: 12px 16px; background: #f8f9fa; border-radius: 10px; font-size: 14px; line-height: 1.8; }
+        .structure-info ul { list-style: none; padding: 0; }
+        .structure-info li { padding: 2px 0; }
+        .score-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+        .score-table th, .score-table td { padding: 8px 6px; border: 1px solid #e0e0e0; text-align: center; }
+        .score-table th { background: var(--bg-secondary); color: #fff; font-weight: 600; }
+        .score-table tr.best { background: #d4edda; font-weight: 700; }
+        .score-table tr.chosen-row { background: #e8f0fe; }
+        .score-high { color: var(--green-dark); font-weight: 700; }
+        .score-mid { color: #e67e22; font-weight: 600; }
+        .score-low { color: var(--red); }
+        .recommendation {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border: 2px solid var(--green-dark); padding: 18px;
+            border-radius: var(--radius); margin-top: 16px;
+        }
+        .recommendation h3 { color: #2e7d32; margin-bottom: 10px; }
+        .detail-section { margin-top: 14px; padding: 14px; background: #f8f9fa; border-radius: 10px; }
+        .waiting-tiles { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .waiting-tile { background: #fff; padding: 4px 10px; border-radius: 6px; font-size: 18px; border: 1px solid #ddd; }
+
+        /* ---- Custom Mode ---- */
+        .custom-section { display: none; }
+        .custom-section.active { display: block; }
+        .practice-section { display: block; }
+        .practice-section.hidden { display: none; }
+        .input-area { background: rgba(255,255,255,0.08); border-radius: var(--radius); padding: 20px; margin: 16px 0; border: 1px solid rgba(255,255,255,0.1); }
+        .input-hint { color: var(--green-light); margin-bottom: 12px; font-size: 13px; }
+        .input-label { color: #ddd; margin: 10px 4px 6px; font-weight: 700; font-size: 14px; }
+        .selected-tiles { min-height: 80px; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 14px; margin: 14px 0; }
+        .selected-tiles-title { color: var(--gold); margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .text-input {
+            width: 100%; max-width: 480px; padding: 12px 16px; font-size: 15px;
+            border: 2px solid rgba(255,215,0,0.5); border-radius: 10px;
+            background: rgba(255,255,255,0.92); color: #333;
+            transition: border-color 0.2s;
+        }
+        .text-input:focus { outline: none; border-color: var(--green-dark); }
+        .input-phase { display: block; }
+        .input-phase.hidden { display: none; }
+        .game-phase { display: none; }
+        .game-phase.active { display: block; }
+
+        /* ---- Principles ---- */
+        .principles-box {
+            background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2);
+            border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+        }
+        .principles-toggle { cursor: pointer; user-select: none; }
+        .principles-toggle .arrow { display: inline-block; transition: transform 0.2s; font-size: 12px; }
+        .principles-toggle .arrow.open { transform: rotate(90deg); }
+        .principles-content { display: none; }
+        .principles-content.open { display: block; }
+        .principles-box h3 { color: var(--gold); margin-bottom: 8px; font-size: 14px; }
+        .principles-box p { color: rgba(255,255,255,0.7); margin: 4px 0; font-size: 13px; line-height: 1.6; }
+
+        .instructions { color: rgba(255,255,255,0.65); text-align: center; margin-bottom: 14px; font-size: 14px; }
+
+        /* ---- Animations (minimal) ---- */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 18px 6px rgba(255,215,0,0.7); }
+            50% { box-shadow: 0 0 28px 10px rgba(255,215,0,0.9); }
+        }
+        .pulse { animation: pulse 1.2s ease-in-out infinite; }
+
+        .loading { color: var(--gold); text-align: center; padding: 30px; font-size: 16px; }
+        .toast {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: rgba(0,0,0,0.9); color: #fff;
+            padding: 12px 24px; border-radius: 10px; font-size: 14px;
+            z-index: 1000; transition: transform 0.25s ease;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .reset-stats { font-size: 12px; color: rgba(255,255,255,0.4); cursor: pointer; text-decoration: underline; }
+        .reset-stats:hover { color: var(--red); }
+
+        @media (max-width: 640px) {
+            body { padding: 10px; }
+            .header h1 { font-size: 1.5em; letter-spacing: 2px; }
+            .game-area { padding: 16px; }
+            .tile { width: 42px; height: 60px; }
+            .tile .tile-emoji { font-size: 22px; }
+            .tile .tile-label { font-size: 9px; }
+            .tile-btn { width: 38px; height: 52px; font-size: 18px; }
+            .mode-tab { padding: 8px 18px; font-size: 13px; }
+            .btn { padding: 10px 22px; font-size: 14px; }
+            .info-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .score-table { font-size: 11px; }
+            .analysis-panel { padding: 16px; }
+            .sim-players { flex-direction: column !important; }
+            .sim-player-panel { min-width: auto !important; }
+            .sim-table-layout { flex-direction: column !important; align-items: center !important; }
+            .sim-opp-row { flex-direction: row !important; flex-wrap: wrap; justify-content: center; }
+        }
+
+        /* ---- Simulation Mode ---- */
+        .sim-section { display: none; }
+        .sim-section.active { display: block; }
+        .sim-table-layout {
+            display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 16px 0;
+        }
+        .sim-opp-row {
+            display: flex; gap: 12px; width: 100%; justify-content: center;
+        }
+        .sim-player-panel {
+            background: rgba(0,0,0,0.25); border-radius: var(--radius); padding: 12px 16px;
+            min-width: 200px; flex: 1; border: 2px solid rgba(255,255,255,0.08);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .sim-player-panel.active-turn {
+            border-color: var(--gold); box-shadow: 0 0 20px rgba(255,215,0,0.2);
+        }
+        .sim-player-panel.is-you {
+            border-color: rgba(40,167,69,0.5);
+        }
+        .sim-player-panel.is-you.active-turn {
+            border-color: var(--gold);
+        }
+        .sim-player-name {
+            font-weight: 700; font-size: 14px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .sim-player-name .wind-icon { font-size: 16px; }
+        .sim-player-name .you-tag {
+            background: var(--green-dark); color: white; padding: 1px 8px;
+            border-radius: 10px; font-size: 11px; font-weight: 600;
+        }
+        .sim-hand-tiles {
+            display: flex; flex-wrap: wrap; gap: 3px; min-height: 32px; margin: 6px 0;
+        }
+        .sim-tile-back {
+            width: 28px; height: 38px;
+            background: linear-gradient(135deg, #1a5c2e, #0d3320);
+            border: 1px solid rgba(255,215,0,0.3); border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; color: rgba(255,215,0,0.4);
+        }
+        .sim-tile-back.revealed {
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border-color: var(--tile-border);
+            color: inherit;
+            font-size: 16px;
+            cursor: default;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .sim-tile-back.revealed.wan { color: var(--wan-color); }
+        .sim-tile-back.revealed.tong { color: var(--tong-color); }
+        .sim-tile-back.revealed.suo { color: var(--suo-color); }
+        .sim-reveal-btn {
+            background: linear-gradient(180deg, #e74c3c, #c0392b);
+            border: none; padding: 8px 20px; font-size: 13px;
+            font-weight: 700; color: white; border-radius: 20px;
+            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .sim-reveal-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .sim-reveal-btn.active {
+            background: linear-gradient(180deg, #27ae60, #219a52);
+        }
+        .sim-tile-small {
+            width: 32px; height: 42px;
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border: 1px solid var(--tile-border); border-radius: 4px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 16px; line-height: 1; cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
+            user-select: none;
+        }
+        .sim-tile-small:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .sim-tile-small .sim-tile-label { font-size: 8px; font-weight: 700; }
+        .sim-tile-small.wan { color: var(--wan-color); }
+        .sim-tile-small.tong { color: var(--tong-color); }
+        .sim-tile-small.suo { color: var(--suo-color); }
+        .sim-tile-small.selected {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 20px rgba(255,215,0,0.5);
+            border-color: var(--gold);
+        }
+        .sim-tile-small.highlight {
+            animation: simPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes simPulse {
+            0%, 100% { box-shadow: 0 0 8px 2px rgba(255,215,0,0.5); }
+            50% { box-shadow: 0 0 16px 4px rgba(255,215,0,0.8); }
+        }
+        .sim-discards {
+            display: flex; flex-wrap: wrap; gap: 2px; min-height: 24px; margin-top: 6px;
+        }
+        .sim-discard-tile {
+            width: 22px; height: 30px;
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border: 1px solid var(--tile-border); border-radius: 3px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 12px; line-height: 1; opacity: 0.8;
+        }
+        .sim-discard-tile .sim-discard-label { font-size: 6px; font-weight: 700; }
+        .sim-discard-tile.wan { color: var(--wan-color); }
+        .sim-discard-tile.tong { color: var(--tong-color); }
+        .sim-discard-tile.suo { color: var(--suo-color); }
+        .sim-discard-tile.last-discard {
+            opacity: 1; border-color: var(--gold);
+            box-shadow: 0 0 6px rgba(255,215,0,0.5);
+        }
+        .sim-info {
+            font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px;
+        }
+        .sim-info strong { color: var(--green-light); }
+        .sim-your-hand {
+            background: rgba(40,167,69,0.08); border-radius: var(--radius-lg);
+            padding: 16px; margin: 12px 0;
+            border: 2px solid rgba(40,167,69,0.3);
+        }
+        .sim-your-hand-title {
+            color: var(--gold); font-weight: 700; font-size: 15px;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+        }
+        .sim-draw-btn {
+            background: linear-gradient(180deg, var(--green-dark), #20c997);
+            color: white; border: none; padding: 12px 32px; font-size: 16px;
+            font-weight: 700; border-radius: 25px; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.3); user-select: none;
+        }
+        .sim-draw-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .sim-draw-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .sim-action-bar {
+            display: flex; justify-content: center; align-items: center;
+            gap: 12px; margin: 12px 0; flex-wrap: wrap;
+        }
+        .sim-msg {
+            text-align: center; color: var(--green-light); font-size: 15px;
+            margin: 8px 0; min-height: 24px;
+        }
+        .sim-msg .discard-anim {
+            display: inline-block; animation: simDiscardPop 0.3s ease-out;
+        }
+        @keyframes simDiscardPop {
+            0% { transform: scale(0.5) translateY(-20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .sim-remaining {
+            text-align: center; font-size: 13px; color: rgba(255,255,255,0.5);
+            margin: 8px 0;
+        }
+        .sim-guess-panel {
+            background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.2);
+            border-radius: var(--radius); padding: 14px 18px; margin: 12px 0;
+        }
+        .sim-guess-title {
+            color: var(--gold); font-weight: 700; font-size: 14px;
+            margin-bottom: 10px; cursor: pointer; user-select: none;
+        }
+        .sim-guess-title .arrow { display: inline-block; transition: transform 0.2s; font-size: 12px; }
+        .sim-guess-title .arrow.open { transform: rotate(90deg); }
+        .sim-guess-content { display: none; }
+        .sim-guess-content.open { display: block; }
+        .sim-guess-player {
+            margin: 10px 0; padding: 10px 14px;
+            background: rgba(0,0,0,0.2); border-radius: 8px;
+        }
+        .sim-guess-player-name {
+            font-weight: 700; font-size: 13px; margin-bottom: 6px;
+            color: var(--green-light);
+        }
+        .sim-guess-tiles {
+            display: flex; flex-wrap: wrap; gap: 3px;
+        }
+        .sim-guess-tile {
+            width: 28px; height: 36px;
+            background: rgba(255,255,255,0.9); border: 1px solid #ddd;
+            border-radius: 4px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; font-size: 13px;
+        }
+        .sim-guess-tile .sim-guess-label { font-size: 7px; font-weight: 700; }
+        .sim-guess-tile.wan { color: var(--wan-color); }
+        .sim-guess-tile.tong { color: var(--tong-color); }
+        .sim-guess-tile.suo { color: var(--suo-color); }
+        .sim-guess-certainty {
+            font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px;
+        }
+        .sim-guess-unknown {
+            color: rgba(255,255,255,0.3); font-size: 12px; font-style: italic;
+        }
+        .sim-win-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75); display: flex; align-items: center;
+            justify-content: center; z-index: 100;
+        }
+        .sim-win-dialog {
+            background: var(--bg-card); border: 2px solid var(--gold);
+            border-radius: var(--radius-lg); padding: 30px 40px;
+            text-align: center; max-width: 500px;
+        }
+        .sim-win-dialog h2 { color: var(--gold); font-size: 1.5em; margin-bottom: 16px; }
+        .sim-win-dialog .win-hand {
+            display: flex; justify-content: center; gap: 6px;
+            flex-wrap: wrap; margin: 16px 0;
+        }
+        .sim-win-dialog .win-tile {
+            width: 40px; height: 54px;
+            background: linear-gradient(180deg, #fffdf5, #f5e6c8);
+            border: 2px solid var(--gold); border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .sim-win-dialog .win-tile .win-emoji { font-size: 22px; }
+        .sim-win-dialog .win-tile .win-label { font-size: 10px; font-weight: 700; }
+        .sim-win-dialog .win-tile.wan { color: var(--wan-color); }
+        .sim-win-dialog .win-tile.tong { color: var(--tong-color); }
+        .sim-win-dialog .win-tile.suo { color: var(--suo-color); }
+        .sim-win-dialog p { color: #ddd; margin: 8px 0; line-height: 1.6; }
+        .sim-speed-control {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: rgba(255,255,255,0.6);
+        }
+        .sim-speed-control input[type="range"] {
+            width: 100px; accent-color: var(--gold);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🀄 广东麻将推倒胡练习 🀄</h1>
+        <p class="subtitle">训练你的出牌判断能力</p>
+    </div>
+    <div class="game-area">
+        <div class="principles-box">
+            <div class="principles-toggle" onclick="togglePrinciples()">
+                <span class="arrow" id="principlesArrow">▶</span> 📐 算法原理说明
+            </div>
+            <div class="principles-content" id="principlesContent">
+                <p><strong>核心逻辑：</strong>听牌需要 (needMelds-1) 面子 + 1 搭子 + 1 将</p>
+                <p><strong>向听数：</strong>最少需要多少次「进张」才能听牌（0=听牌）</p>
+                <p><strong>评分优先级：</strong>听牌 > 向听数 > 面子数 > 搭子质量 > 进张数</p>
+                <p><strong>进张数：</strong>摸到某张牌后向听数减少的牌的总张数</p>
+            </div>
+        </div>
+        <div class="mode-tabs">
+            <button class="mode-tab active" onclick="switchMode('practice')" id="tab-practice">🎮 练习模式</button>
+            <button class="mode-tab" onclick="switchMode('custom')" id="tab-custom">✏️ 自定义模式</button>
+            <button class="mode-tab" onclick="switchMode('simulation')" id="tab-simulation">🧠 模拟对局</button>
+        </div>
+        <div class="practice-section" id="practice-section">
+            <div class="difficulty-section">
+                <span class="difficulty-label">选择难度：</span>
+                <div class="difficulty-group">
+                    <button class="btn difficulty active" onclick="setDifficulty('normal')" id="btn-normal">🎯 普通</button>
+                    <button class="btn difficulty" onclick="setDifficulty('hard')" id="btn-hard">🔥 困难</button>
+                    <button class="btn difficulty" onclick="setDifficulty('expert')" id="btn-expert">💀 专家</button>
+                </div>
+            </div>
+            <p class="instructions">点击「开始练习」生成一副有难度的牌，仔细思考后选择打出哪张</p>
+            <div class="action-row">
+                <button class="btn" onclick="startPractice()" id="startBtn">🎴 开始练习</button>
+                <button class="btn ghost" onclick="showHint()" id="hintBtn" disabled>💡 提示</button>
+            </div>
+            <div class="info-bar">
+                <span class="tile-count-display" id="tileCountDisplay">当前手牌：0 张 | 点击「开始练习」</span>
+                <span class="score-display">
+                    正确 <span id="correct">0</span> | 错误 <span id="wrong">0</span> | 正确率 <span id="rate">-</span>
+                    <span class="reset-stats" onclick="resetStats()">[重置]</span>
+                </span>
+            </div>
+            <div class="tiles-container" id="tilesContainer">
+                <span style="color: rgba(255,255,255,0.3)">点击「开始练习」生成牌型</span>
+            </div>
+            <div class="analysis-panel" id="analysisPanel">
+                <div class="analysis-title">📊 欢迎</div>
+                <p style="color:#888">选择难度后点击「开始练习」，系统将生成一手有挑战性的牌，考验你的出牌判断能力。</p>
+            </div>
+        </div>
+        <div class="custom-section" id="custom-section">
+            <div class="input-phase" id="custom-input-phase">
+                <p class="instructions">选择或输入你的手牌，然后练习打出哪张牌最优</p>
+                <div class="input-area">
+                    <div class="input-hint">方式1：点击下方牌面选择（每种最多4张）</div>
+                    <div class="input-label">万子 🀇🀈🀉🀊🀋🀌🀍🀎🀏</div>
+                    <div class="tile-selector" id="wan-selector"></div>
+                    <div class="input-label">筒子 🀙🀚🀛🀜🀝🀞🀟🀠🀡</div>
+                    <div class="tile-selector" id="tong-selector"></div>
+                    <div class="input-label">索子 🀐🀑🀒🀓🀔🀕🀖🀗🀘</div>
+                    <div class="tile-selector" id="suo-selector"></div>
+                    <div class="selected-tiles">
+                        <div class="selected-tiles-title">
+                            已选手牌：<span id="selected-count">0</span> 张
+                            <button class="btn small danger" onclick="clearCustomHand()">清空</button>
+                        </div>
+                        <div class="tiles-container" id="custom-tiles-input">
+                            <span style="color: rgba(255,255,255,0.3)">点击上方牌面选择</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-area">
+                    <div class="input-hint">方式2：直接输入文字（如：112万 2334筒 35索）</div>
+                    <div style="text-align:center"><input type="text" class="text-input" id="text-input" placeholder="例如：112万 2334筒 35索"></div>
+                    <div style="text-align:center;margin-top:10px"><button class="btn small" onclick="parseTextInput()">📋 解析文字</button></div>
+                </div>
+                <div class="action-row"><button class="btn" onclick="startCustomGame()" id="startCustomBtn" disabled>✅ 确认手牌，开始练习</button></div>
+            </div>
+            <div class="game-phase" id="custom-game-phase">
+                <p class="instructions">点击选择你要打出的牌</p>
+                <div class="action-row">
+                    <button class="btn ghost" onclick="resetCustomInput()">🔄 重新输入</button>
+                    <button class="btn ghost" onclick="showCustomHint()" id="customHintBtn">💡 提示</button>
+                </div>
+                <div class="info-bar"><span class="tile-count-display" id="customTileCount">当前手牌：0 张</span></div>
+                <div class="tiles-container" id="custom-tiles-display"></div>
+                <div class="analysis-panel" id="customAnalysisPanel">
+                    <div class="analysis-title">📊 分析结果</div>
+                    <p style="color:#888">点击选择你要打出的牌</p>
+                </div>
+            </div>
+        </div>
+        <div class="sim-section" id="sim-section">
+            <p class="instructions">4人对局模拟 — 你是玩家（下方），观察对手出牌来猜他们的手牌</p>
+            <div class="action-row">
+                <button class="btn" onclick="simStartGame()" id="simStartBtn">🎴 开始对局</button>
+                <button class="btn ghost" onclick="simToggleGuess()" id="simGuessBtn">🔍 查看推理</button>
+                <button class="sim-reveal-btn" onclick="simToggleReveal()" id="simRevealBtn" style="display:none">👁 偷看手牌</button>
+                <div class="sim-speed-control">
+                    <span>AI速度：</span>
+                    <input type="range" id="simSpeedSlider" min="200" max="1500" value="600" step="100">
+                    <span id="simSpeedLabel">0.6s</span>
+                </div>
+            </div>
+            <div class="sim-msg" id="simMsg">点击「开始对局」开始模拟4人打牌</div>
+            <div class="sim-remaining" id="simRemaining"></div>
+            <div class="sim-table-layout" id="simTable">
+                <div class="sim-opp-row" id="simOppRow"></div>
+                <div class="sim-guess-panel" id="simGuessPanel" style="display:none">
+                    <div class="sim-guess-title" onclick="simToggleGuessContent()">
+                        <span class="arrow" id="simGuessArrow">▶</span> 🔍 AI推理 — 根据出牌记录推测各玩家手牌
+                    </div>
+                    <div class="sim-guess-content" id="simGuessContent"></div>
+                </div>
+                <div class="sim-your-hand" id="simYourHand" style="display:none">
+                    <div class="sim-your-hand-title">🃏 你的手牌 <span class="you-tag" style="background:var(--green-dark);color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600">南家</span></div>
+                    <div class="sim-hand-tiles" id="simYourTiles"></div>
+                </div>
+                <div class="sim-action-bar" id="simActionBar" style="display:none">
+                    <button class="sim-draw-btn" id="simDrawBtn" onclick="simPlayerDraw()">🀄 摸牌</button>
+                    <button class="btn ghost" onclick="simAutoDiscard()" id="simAutoBtn" style="display:none">💡 自动出牌</button>
+                </div>
+                <div class="sim-discards" id="simYourDiscards" style="display:none"></div>
+            </div>
+            <div class="analysis-panel" id="simAnalysisPanel" style="display:none">
+                <div class="analysis-title">📊 对局信息</div>
+                <p style="color:#888">开始对局后将显示详细信息</p>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    /* ============================================================
+     *  广东麻将推倒胡练习 - 性能优化版
+     *  核心优化：用数组代替对象字典、缓存计算、Web Worker分帧
+     * ============================================================ */
+
+    // ---- Constants (use arrays for speed) ----
+    const TILE_TYPES = {
+        wan:  { name: '万', tiles: ['一','二','三','四','五','六','七','八','九'], emojis: ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'], order: 0 },
+        tong: { name: '筒', tiles: ['一','二','三','四','五','六','七','八','九'], emojis: ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'], order: 1 },
+        suo:  { name: '索', tiles: ['一','二','三','四','五','六','七','八','九'], emojis: ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'], order: 2 }
+    };
+    const TYPES = ['wan', 'tong', 'suo'];
+
+    // Compact tile representation: index = type*9 + (number-1), value 0..26
+    // For count array: use Int8Array(27) for speed
+    function tileIdx(type, num) { return type * 9 + (num - 1); }
+    function tileTypeIdx(idx) { return [Math.floor(idx / 9), idx % 9 + 1]; } // [typeNum 0-2, num 1-9]
+    function typeNum(type) { return type === 'wan' ? 0 : type === 'tong' ? 1 : 2; }
+    function typeFromNum(n) { return TYPES[n]; }
+
+    function handToArray(hand) {
+        const arr = [];
+        for (const t of hand) arr.push(tileIdx(typeNum(t.type), t.index));
+        return arr.sort((a, b) => a - b);
+    }
+
+    function countArray(arr, excludeIdx) {
+        const len = excludeIdx >= 0 ? arr.length - 1 : arr.length;
+        const c = new Int8Array(27);
+        for (let i = 0; i < len; i++) c[arr[i]]++;
+        return c;
+    }
+
+    function copyArray(c) { return new Int8Array(c); }
+
+    // ---- State ----
+    let currentHand = [];
+    let currentHandArray = [];
+    let cachedAnalysis = null;
+    let cachedShanten = -1;
+    let customHand = [];
+    let correctCount = 0;
+    let wrongCount = 0;
+    let currentDifficulty = 'normal';
+    let practiceActive = false;
+    let isGenerating = false;
+
+    // ---- Load / Save Stats ----
+    function loadStats() {
+        try {
+            const d = JSON.parse(localStorage.getItem('mahjong_stats') || '{}');
+            correctCount = d.correct || 0;
+            wrongCount = d.wrong || 0;
+        } catch(e) {}
+        updateStats();
+    }
+    function saveStats() {
+        try { localStorage.setItem('mahjong_stats', JSON.stringify({ correct: correctCount, wrong: wrongCount })); } catch(e) {}
+    }
+    function resetStats() {
+        correctCount = 0; wrongCount = 0; saveStats(); updateStats(); showToast('统计数据已重置');
+    }
+
+    // ---- Utility ----
+    function key(type, idx) { return type + '_' + idx; }
+
+    function countTiles(hand) {
+        const c = {};
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) c[key(type, i)] = 0;
+        hand.forEach(t => { c[key(t.type, t.index)]++; });
+        return c;
+    }
+
+    function getDisplay(t) {
+        const info = TILE_TYPES[t.type];
+        return { emoji: info.emojis[t.index - 1], text: info.tiles[t.index - 1] + info.name, cls: t.type };
+    }
+
+    function shantenText(s) {
+        if (s === 0) return '<span class="score-high">听牌</span>';
+        if (s === 1) return '<span class="score-high">一向听</span>';
+        if (s === 2) return '<span class="score-mid">两向听</span>';
+        return '<span class="score-low">' + s + '向听</span>';
+    }
+
+    // ---- Core: Win Check (standard 4 mentsu + 1 jantai = 14 tiles) ----
+    function canWinArray(c) {
+        // Calculate total tiles and needed mentsu from count array
+        let total = 0;
+        for (let i = 0; i < 27; i++) total += c[i];
+        // 3n+2 format: needed mentsu = (total - 2) / 3
+        const neededMentsu = Math.floor((total - 2) / 3);
+
+        function solve(cc, m, j, si) {
+            if (m >= neededMentsu && j) {
+                for (let i = si; i < 27; i++) if (cc[i] > 0) return false;
+                return true;
+            }
+            if (m * 3 + j * 2 > total) return false;
+            let fi = -1;
+            for (let i = si; i < 27; i++) { if (cc[i] > 0) { fi = i; break; } }
+            if (fi === -1) return m >= neededMentsu && j;
+            const rn = fi % 9;
+            if (!j && cc[fi] >= 2) {
+                cc[fi] -= 2;
+                if (solve(cc, m, true, fi)) { cc[fi] += 2; return true; }
+                cc[fi] += 2;
+            }
+            if (cc[fi] >= 3) {
+                cc[fi] -= 3;
+                if (solve(cc, m + 1, j, fi)) { cc[fi] += 3; return true; }
+                cc[fi] += 3;
+            }
+            if (rn <= 6 && cc[fi] >= 1 && cc[fi+1] >= 1 && cc[fi+2] >= 1) {
+                cc[fi]--; cc[fi+1]--; cc[fi+2]--;
+                if (solve(cc, m + 1, j, fi)) { cc[fi]++; cc[fi+1]++; cc[fi+2]++; return true; }
+                cc[fi]++; cc[fi+1]++; cc[fi+2]++;
+            }
+            return false;
+        }
+        return solve(c, 0, false, 0);
+    }
+
+    // ---- Shanten Calculator (standard: 4 mentsu + 1 jantai) ----
+    // Per-suit DFS with two states tracked via return value:
+    //   nj (no jantai): best (pt, bl) when this suit provides NO jantai pair.
+    //     All pairs count as taatsu (pt+1, bl+1).
+    //   wj (with jantai): best (pt, bl) when a pair in this suit IS the jantai.
+    //     The jantai pair does NOT add to pt or bl. Only one pair per suit can be jantai.
+    //     If no pair is available as jantai, wj returns (-1, -1) = invalid.
+    //
+    // Base case semantics:
+    //   jState=0 reached end → nj=[0,0], wj=(-1,-1) invalid (no jantai was taken)
+    //   jState=1 reached end → nj=[0,0], wj=[0,0] valid (jantai was taken earlier)
+    //   This prevents wj from "stealing" the nj result.
+
+    function calcShantenFast(arr) {
+        const c = countArray(arr);
+        return _calcShantenCount(c, arr.length);
+    }
+
+    function _runSuitDFS(sc) {
+        const c = new Int8Array(sc);
+        const memo = new Map();
+        const INVALID = [-1, -1];
+
+        function dfs(pos, jState) {
+            while (pos < 9 && c[pos] === 0) pos++;
+            if (pos >= 9) {
+                // End of suit: jState=1 means jantai was allocated, jState=0 means not
+                return {
+                    nj: [0, 0],
+                    wj: jState === 1 ? [0, 0] : [-1, -1]
+                };
+            }
+
+            let h = pos * 2 + jState;
+            for (let i = pos; i < 9; i++) h = h * 5 + c[i];
+            if (memo.has(h)) return memo.get(h);
+
+            let bestNJ = [-1, -1]; // start invalid
+            let bestWJ = [-1, -1]; // start invalid (no jantai allocated yet)
+            const v = c[pos];
+
+            function updateNJ(pt, bl) {
+                if (bestNJ[0] === -1 || pt > bestNJ[0] || (pt === bestNJ[0] && bl < bestNJ[1])) {
+                    bestNJ = [pt, bl];
+                }
+            }
+            function updateWJ(pt, bl) {
+                if (bestWJ[0] === -1 || pt > bestWJ[0] || (pt === bestWJ[0] && bl < bestWJ[1])) {
+                    bestWJ = [pt, bl];
+                }
+            }
+
+            // 1. Triplet (mentsu): pt+2, bl+1
+            if (v >= 3) {
+                c[pos] -= 3;
+                const r = dfs(pos, jState);
+                if (r.nj[0] >= 0) updateNJ(r.nj[0] + 2, r.nj[1] + 1);
+                if (r.wj[0] >= 0) updateWJ(r.wj[0] + 2, r.wj[1] + 1);
+                c[pos] += 3;
+            }
+
+            // 2. Pair: can be taatsu or jantai
+            if (v >= 2) {
+                c[pos] -= 2;
+                const r = dfs(pos, jState);
+
+                // As taatsu (pt+1, bl+1): always available for nj state
+                if (r.nj[0] >= 0) updateNJ(r.nj[0] + 1, r.nj[1] + 1);
+                // For wj: pair as taatsu (jantai from elsewhere in same suit or subtree)
+                if (r.wj[0] >= 0) updateWJ(r.wj[0] + 1, r.wj[1] + 1);
+
+                // As jantai (pt+0, bl+0): only for wj, only if jState=0 (not already allocated)
+                if (jState === 0) {
+                    const rJ = dfs(pos, 1);
+                    // rJ.wj: subtree also has jantai → invalid (can't have 2 jantai)
+                    // rJ.nj: no jantai in subtree → total has our pair as jantai ✓
+                    if (rJ.nj[0] >= 0) updateWJ(rJ.nj[0], rJ.nj[1]);
+                }
+
+                c[pos] += 2;
+            }
+
+            // 3. Sequence (mentsu): pt+2, bl+1
+            if (pos + 2 < 9 && v >= 1 && c[pos + 1] >= 1 && c[pos + 2] >= 1) {
+                c[pos]--; c[pos + 1]--; c[pos + 2]--;
+                const r = dfs(pos, jState);
+                if (r.nj[0] >= 0) updateNJ(r.nj[0] + 2, r.nj[1] + 1);
+                if (r.wj[0] >= 0) updateWJ(r.wj[0] + 2, r.wj[1] + 1);
+                c[pos]++; c[pos + 1]++; c[pos + 2]++;
+            }
+
+            // 4. Adjacent taatsu: pt+1, bl+1
+            if (pos + 1 < 9 && v >= 1 && c[pos + 1] >= 1) {
+                c[pos]--; c[pos + 1]--;
+                const r = dfs(pos, jState);
+                if (r.nj[0] >= 0) updateNJ(r.nj[0] + 1, r.nj[1] + 1);
+                if (r.wj[0] >= 0) updateWJ(r.wj[0] + 1, r.wj[1] + 1);
+                c[pos]++; c[pos + 1]++;
+            }
+
+            // 5. Gap taatsu: pt+1, bl+1
+            if (pos + 2 < 9 && v >= 1 && c[pos + 2] >= 1) {
+                c[pos]--; c[pos + 2]--;
+                const r = dfs(pos, jState);
+                if (r.nj[0] >= 0) updateNJ(r.nj[0] + 1, r.nj[1] + 1);
+                if (r.wj[0] >= 0) updateWJ(r.wj[0] + 1, r.wj[1] + 1);
+                c[pos]++; c[pos + 2]++;
+            }
+
+            // 6. Discard one tile: pt+0, bl+0
+            c[pos]--;
+            const r = dfs(pos, jState);
+            if (r.nj[0] >= 0) updateNJ(r.nj[0], r.nj[1]);
+            if (r.wj[0] >= 0) updateWJ(r.wj[0], r.wj[1]);
+            c[pos]++;
+
+            // If nothing found, at least allow discard-all (nj=[0,0])
+            if (bestNJ[0] === -1) bestNJ = [0, 0];
+
+            const result = { nj: bestNJ, wj: bestWJ };
+            memo.set(h, result);
+            return result;
+        }
+
+        return dfs(0, 0);
+    }
+
+    function _calcShantenCount(c, handLen) {
+        if (handLen < 2) return 8;
+
+        const suits = [];
+        const sc = new Int8Array(9);
+        for (let s = 0; s < 3; s++) {
+            for (let i = 0; i < 9; i++) sc[i] = c[s * 9 + i];
+            suits.push(_runSuitDFS(sc));
+        }
+
+        // 推倒胡的胡牌形固定为 4面子+1雀头=14张，所以向听公式始终用 nM=4
+        // basePt = 2*4 = 8 对应标准公式 shanten = 8 - 2*m - t - j
+        // block（面子+搭子）上限始终为 nM=4，雀头不占 block 位
+        const nM = 4;
+        const basePt = 2 * nM;        // 8
+        const maxBlocks = nM;          // 4 (面子+搭子的 block 上限，雀头不占 block)
+
+        let minShanten = basePt + 1;
+
+        // Case 1: no jantai
+        {
+            let totalPt = 0, totalBl = 0;
+            for (let s = 0; s < 3; s++) {
+                totalPt += suits[s].nj[0];
+                totalBl += suits[s].nj[1];
+            }
+            if (totalBl > maxBlocks) totalPt -= (totalBl - maxBlocks);
+            let shanten = basePt - totalPt;
+            if (shanten < 1) shanten = 1;
+            minShanten = Math.min(minShanten, shanten);
+        }
+
+        // Case 2: exactly one suit provides jantai
+        for (let jSuit = 0; jSuit < 3; jSuit++) {
+            const wj = suits[jSuit].wj;
+            if (wj[0] < 0) continue;
+
+            let totalPt = 0, totalBl = 0;
+            for (let s = 0; s < 3; s++) {
+                if (s === jSuit) {
+                    totalPt += wj[0];
+                    totalBl += wj[1];
+                } else {
+                    totalPt += suits[s].nj[0];
+                    totalBl += suits[s].nj[1];
+                }
+            }
+            if (totalBl > maxBlocks) totalPt -= (totalBl - maxBlocks);
+            const shanten = basePt - totalPt - 1;
+            minShanten = Math.min(minShanten, shanten);
+        }
+
+        return Math.max(0, minShanten);
+    }
+
+    // // Compat wrappers for custom mode
+    function calcShanten(hand) { return calcShantenFast(handToArray(hand)); }
+
+    // ---- Waiting Tiles ----
+    function getWaiting(hand) {
+        const arr = handToArray(hand);
+        const c = countArray(arr);
+        const waiting = [];
+        for (let ti = 0; ti < 3; ti++) {
+            for (let n = 1; n <= 9; n++) {
+                const idx = ti * 9 + (n - 1);
+                if (c[idx] < 4) {
+                    c[idx]++;
+                    if (canWinArray(c)) {
+                        waiting.push({ type: typeFromNum(ti), index: n, remaining: 4 - (c[idx] - 1) });
+                    }
+                    c[idx]--;
+                }
+            }
+        }
+        return waiting;
+    }
+
+    // ---- Fast Ukeire (draw + best discard) ----
+    function calcUkeireFast(arr) {
+        const c = countArray(arr);
+        const currentShanten = calcShantenFast(arr);
+        if (currentShanten === 0) return { count: 0, tiles: [] }; // already tenpai, no improvement
+        let ukeire = 0;
+        const ukeTiles = [];
+        const len = arr.length;
+        // When analyzing 3n+1 hands (after discarding one tile):
+        // "draw" means adding a tile conceptually → 3n+2
+        // "discard" from 3n+2 → still 3n+2... no, draw makes it 3n+2, then discard one → 3n+1 again
+        // 
+        // Actually for our use case:
+        // - If arr is 3n+2 (user's original hand before discard), calcUkeireFast shouldn't be called directly
+        // - If arr is 3n+1 (after discarding from 3n+2), we want to know:
+        //   "which draw → keeps 3n+1 length after swap → evaluates 3n+1 quality"
+        //   But shanten is only meaningful for 3n+2...
+        //
+        // Solution: for ukeire, we simulate "draw this tile (3n+2) then find best discard (3n+1)"
+        // Wait no - we want to simulate the NEXT draw+discard cycle.
+        // From 3n+1: draw → 3n+2, then we evaluate the 3n+2 hand's shanten
+        // But we can't form 3n+2 by swap in a 3n+1 array...
+        //
+        // Simplest fix: if len is 3n+1, push the drawn tile and evaluate
+        // If len is 3n+2, use swap (draw+discard in one step)
+
+        const is3nPlus1 = (len % 3 === 1);
+
+        for (let ti = 0; ti < 3; ti++) {
+            for (let n = 1; n <= 9; n++) {
+                const idx = ti * 9 + (n - 1);
+                if (c[idx] < 4) {
+                    let bestShanten = 8;
+
+                    if (is3nPlus1) {
+                        // Draw: arr becomes 3n+2 → evaluate shanten directly
+                        arr.push(idx);
+                        const ds = calcShantenFast(arr);
+                        bestShanten = ds;
+                        arr.pop();
+                    } else {
+                        // 3n+2 or other: swap mode (draw + discard one)
+                        for (let di = 0; di < len; di++) {
+                            const tmp = arr[di];
+                            arr[di] = idx;
+                            const ds = calcShantenFast(arr);
+                            if (ds < bestShanten) bestShanten = ds;
+                            arr[di] = tmp;
+                            if (bestShanten === 0) break;
+                        }
+                    }
+
+                    if (bestShanten < currentShanten) {
+                        const rem = 4 - c[idx];
+                        ukeire += rem;
+                        ukeTiles.push({ type: typeFromNum(ti), index: n, remaining: rem });
+                    }
+                }
+            }
+        }
+        return { count: ukeire, tiles: ukeTiles };
+    }
+
+    // ---- Structure Analysis ----
+    function analyzeStructure(hand) {
+        const c = {};
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) c[key(type, i)] = 0;
+        hand.forEach(t => { c[key(t.type, t.index)]++; });
+
+        let melds = 0, pairs = 0, taatsu = 0, isolated = 0;
+        // Sequences
+        for (const type of TYPES) for (let i = 1; i <= 7; i++) {
+            while (c[key(type, i)] >= 1 && c[key(type, i + 1)] >= 1 && c[key(type, i + 2)] >= 1) {
+                melds++; c[key(type, i)]--; c[key(type, i + 1)]--; c[key(type, i + 2)]--;
+            }
+        }
+        // Triplets
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) {
+            const k = key(type, i); while (c[k] >= 3) { melds++; c[k] -= 3; }
+        }
+        // Pairs
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) {
+            const k = key(type, i); if (c[k] >= 2) { pairs++; c[k] -= 2; }
+        }
+        // Taatsu
+        for (const type of TYPES) {
+            for (let i = 1; i <= 8; i++) {
+                if (c[key(type, i)] >= 1 && c[key(type, i + 1)] >= 1) { taatsu++; c[key(type, i)]--; c[key(type, i + 1)]--; }
+            }
+            for (let i = 1; i <= 7; i++) {
+                if (c[key(type, i)] >= 1 && c[key(type, i + 2)] >= 1) { taatsu++; c[key(type, i)]--; c[key(type, i + 2)]--; }
+            }
+        }
+        // Isolated
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) isolated += c[key(type, i)];
+        return { melds, pairs, taatsu, isolated };
+    }
+
+    // ---- Advanced Scoring ----
+    // 评分维度: 向听(主) > 进张数(次) > 进张质量 > 牌型结构 > 孤张/进张深度
+    //
+    // 进张质量: 模拟摸到每张进张后的"次向听"和"次进张"
+    //   - 摸到后变成听牌的进张, 质量远高于摸到后还是多向听的
+    //   - 摸到后向听降2级的进张(如3向听→1向听), 质量极高
+    //   - 听牌宽度: 摸到听牌时听几种牌, 越多越好
+    //
+    // 牌型结构:
+    //   - 保留完整面子(刻子/顺子)加分
+    //   - 保留对子(雀头候选)加分
+    //   - 保留复合搭子(一张牌同时属于多个搭子)加分
+    //   - 孤张越少越好
+    //
+    // 进张深度: 进张牌本身与手牌的关联度
+    //   - 靠近已有面子/搭子的进张 > 远离的
+
+    function calcUkeireQuality(hand, ukeTiles) {
+        // For each uke tile, simulate drawing it and compute:
+        //   - nextShanten: shanten after drawing (push for 3n+1 → 3n+2)
+        //   - nextWaiting: if tenpai, how many kinds waiting
+        //   - adjacency: how close is this tile to existing tiles in hand
+        const arr = handToArray(hand);
+        const c = countArray(arr);
+        let quality = 0;
+        let tenpaiCount = 0;
+        let tenpaiWidth = 0;
+        const is3nPlus1 = (arr.length % 3 === 1);
+
+        for (const ut of ukeTiles) {
+            const idx = tileIdx(typeNum(ut.type), ut.index);
+            let bestShanten = 8;
+            let bestWaitingLen = 0;
+            const rem = ut.remaining || 1;
+
+            if (is3nPlus1) {
+                // Push mode: 3n+1 → draw → 3n+2, then evaluate shanten
+                arr.push(idx);
+                const ds = calcShantenFast(arr);
+                bestShanten = ds;
+
+                // If tenpai (shanten=0), check waiting breadth
+                if (ds === 0) {
+                    const cc = countArray(arr);
+                    // Check which tiles can complete the hand
+                    for (let ti2 = 0; ti2 < 3; ti2++) {
+                        for (let n2 = 1; n2 <= 9; n2++) {
+                            const tidx2 = ti2 * 9 + (n2 - 1);
+                            if (cc[tidx2] < 4) {
+                                cc[tidx2]++;
+                                if (canWinArray(cc)) bestWaitingLen++;
+                                cc[tidx2]--;
+                            }
+                        }
+                    }
+                }
+                arr.pop();
+            } else {
+                // Swap mode: draw+discard for 3n+2 hands
+                const len = arr.length;
+                for (let di = 0; di < len; di++) {
+                    const tmp = arr[di];
+                    arr[di] = idx;
+                    const ds = calcShantenFast(arr);
+                    if (ds < bestShanten) {
+                        bestShanten = ds;
+                        bestWaitingLen = 0;
+                    }
+                    if (ds === bestShanten && ds === 0) {
+                        const testHand = hand.filter((_, i) => i !== di);
+                        testHand.push(ut);
+                        const w = getWaiting(testHand);
+                        if (w.length > bestWaitingLen) bestWaitingLen = w.length;
+                    }
+                    arr[di] = tmp;
+                    if (bestShanten === 0) break;
+                }
+            }
+
+            const baselineShanten = calcShantenFast(arr);
+            const shantenDrop = baselineShanten - bestShanten;
+
+            if (bestShanten === 0) {
+                tenpaiCount++;
+                tenpaiWidth += bestWaitingLen;
+                quality += rem * 500 + bestWaitingLen * rem * 50;
+            } else if (shantenDrop >= 2) {
+                quality += rem * 300;
+            } else if (shantenDrop === 1) {
+                quality += rem * 100;
+            }
+
+            // Adjacency bonus: removed - this was causing wrong recommendations
+            // when ukeire counts and shanten were equal, the adjacency bonus
+            // favored denser hands incorrectly (e.g., keeping scattered tiles over pairs)
+        }
+
+        return { quality, tenpaiCount, tenpaiWidth };
+    }
+
+    function calcStructureScore(hand, discardedTile) {
+        const c = {};
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) c[key(type, i)] = 0;
+        hand.forEach(t => { c[key(t.type, t.index)]++; });
+
+        let structureScore = 0;
+
+        // 1. Complete melds (mentsu) bonus
+        let melds = 0;
+        // Sequences
+        for (const type of TYPES) for (let i = 1; i <= 7; i++) {
+            while (c[key(type, i)] >= 1 && c[key(type, i + 1)] >= 1 && c[key(type, i + 2)] >= 1) {
+                melds++; c[key(type, i)]--; c[key(type, i + 1)]--; c[key(type, i + 2)]--;
+            }
+        }
+        // Triplets
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) {
+            const k = key(type, i); while (c[k] >= 3) { melds++; c[k] -= 3; }
+        }
+        structureScore += melds * 200;
+
+        // 2. Pair bonus (jantai candidate) - pairs are essential but secondary to ukeire count
+        let pairCount = 0;
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) {
+            const k = key(type, i);
+            if (c[k] >= 2) { pairCount++; c[k] -= 2; structureScore += 80; }
+        }
+
+        // 3. Taatsu bonus - weighted by connectivity
+        // Adjacent taatsu are more valuable than gap taatsu
+        let adjTaatsu = 0, gapTaatsu = 0;
+        for (const type of TYPES) {
+            for (let i = 1; i <= 8; i++) {
+                if (c[key(type, i)] >= 1 && c[key(type, i + 1)] >= 1) { adjTaatsu++; c[key(type, i)]--; c[key(type, i + 1)]--; }
+            }
+            for (let i = 1; i <= 7; i++) {
+                if (c[key(type, i)] >= 1 && c[key(type, i + 2)] >= 1) { gapTaatsu++; c[key(type, i)]--; c[key(type, i + 2)]--; }
+            }
+        }
+        structureScore += adjTaatsu * 80 + gapTaatsu * 40;
+
+        // 4. Isolated tiles penalty
+        let isolated = 0;
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) isolated += c[key(type, i)];
+        structureScore -= isolated * 30;
+
+        // 5. Consecutive number density bonus (tiles clustered together are better)
+        const arr = handToArray(hand);
+        for (let suit = 0; suit < 3; suit++) {
+            let consecutive = 0;
+            for (let n = 0; n < 9; n++) {
+                if (arr.includes(suit * 9 + n)) {
+                    consecutive++;
+                    if (consecutive >= 3) structureScore += 15; // bonus for 3+ in a row
+                } else {
+                    consecutive = 0;
+                }
+            }
+        }
+
+        // 6. Suit purity: suits with complete melds (triplets/sequences) are more valuable
+        //    A suit with only a triplet (e.g., 888) is "purer" than one with triplet + stray tile
+        for (const type of TYPES) {
+            let suitTiles = 0;
+            let suitMelds = 0;
+            let suitPairs = 0;
+            const sc = {};
+            for (let i = 1; i <= 9; i++) { sc[i] = 0; }
+            hand.forEach(t => { if (t.type === type) { sc[t.index]++; suitTiles++; } });
+            if (suitTiles === 0) continue;
+
+            // Count melds
+            for (let i = 1; i <= 7; i++) {
+                while (sc[i] >= 1 && sc[i+1] >= 1 && sc[i+2] >= 1) {
+                    suitMelds++; sc[i]--; sc[i+1]--; sc[i+2]--;
+                }
+            }
+            for (let i = 1; i <= 9; i++) {
+                while (sc[i] >= 3) { suitMelds++; sc[i] -= 3; }
+            }
+            for (let i = 1; i <= 9; i++) {
+                if (sc[i] >= 2) { suitPairs++; sc[i] -= 2; }
+            }
+
+            // Purity: ratio of tiles in complete structures vs total
+            const meldedTiles = suitMelds * 3 + suitPairs * 2;
+            const strayTiles = suitTiles - meldedTiles;
+            if (suitMelds > 0 && strayTiles === 0) {
+                // Perfect suit: all tiles in complete structures
+                structureScore += 60;
+            } else if (suitMelds > 0 && strayTiles <= 2) {
+                // Mostly complete suit
+                structureScore += 30;
+            } else if (strayTiles > 3) {
+                // Too many stray tiles in this suit
+                structureScore -= strayTiles * 5;
+            }
+        }
+
+        return { structureScore, melds, pairs: pairCount, adjTaatsu, gapTaatsu, isolated };
+    }
+
+    // ---- Discard Analysis ----
+    // For a 3n+2 hand (the user's hand), we evaluate each possible discard:
+    // After discarding → 3n+1 hand → draw one tile → 3n+2 hand → can it win?
+    //
+    // Key metric: "acceptance" = which draws lead to a complete winning hand
+    // and how many such tiles exist
+    function analyzeDiscard(hand, idx) {
+        const newHand = hand.filter((_, i) => i !== idx);
+        const tile = hand[idx];
+        const newArr = handToArray(newHand);
+        const c = countArray(newArr);
+
+        // 1. Find minimum shanten after drawing any tile (→14 tiles, 3n+2)
+        let bestShantenAfterDraw = 8;
+        for (let ti = 0; ti < 3; ti++) {
+            for (let n = 1; n <= 9; n++) {
+                const tidx = ti * 9 + (n - 1);
+                if (c[tidx] < 4) {
+                    newArr.push(tidx);
+                    const ds = calcShantenFast(newArr);
+                    if (ds < bestShantenAfterDraw) bestShantenAfterDraw = ds;
+                    newArr.pop();
+                    if (bestShantenAfterDraw === 0) break;
+                }
+                if (bestShantenAfterDraw === 0) break;
+            }
+            if (bestShantenAfterDraw === 0) break;
+        }
+
+        // 2. Count tiles that lead to a WINNING hand (canWinArray = true)
+        let winTiles = 0;
+        let winRemain = 0;
+        for (let ti = 0; ti < 3; ti++) {
+            for (let n = 1; n <= 9; n++) {
+                const tidx = ti * 9 + (n - 1);
+                if (c[tidx] < 4) {
+                    newArr.push(tidx);
+                    const cc = countArray(newArr);
+                    if (canWinArray(cc)) {
+                        winTiles++;
+                        winRemain += (4 - c[tidx]);
+                    }
+                    newArr.pop();
+                }
+            }
+        }
+
+        // 3. Ukeire: tiles that improve shanten (draw → lower shanten → real tenpai)
+        // Baseline = original hand's shanten (14 tiles before discard)
+        const baselineShanten = calcShantenFast(handToArray(hand));
+        let ukeire = 0;
+        const ukeTiles = [];
+        if (baselineShanten > 0) {
+            const targetShanten = baselineShanten - 1;
+            for (let ti = 0; ti < 3; ti++) {
+                for (let n = 1; n <= 9; n++) {
+                    const tidx = ti * 9 + (n - 1);
+                    if (c[tidx] < 4) {
+                        newArr.push(tidx);
+                        const ds = calcShantenFast(newArr);
+                        if (ds <= targetShanten) {
+                            const rem = 4 - c[tidx];
+                            ukeire += rem;
+                            ukeTiles.push({ type: typeFromNum(ti), index: n, remaining: rem });
+                        }
+                        newArr.pop();
+                    }
+                }
+            }
+        }
+
+        const handValue = analyzeStructure(newHand);
+
+        let score = 0;
+        if (winTiles > 0) {
+            score = 800000;
+            score += winTiles * 2000 + winRemain * 100;
+            handValue._tenpaiTiles = winTiles;
+            handValue._tenpaiRemain = winRemain;
+        } else {
+            score += (8 - bestShantenAfterDraw) * 100000;
+            score += ukeire * 100;
+
+            const ukeQuality = calcUkeireQuality(newHand, ukeTiles);
+            score += Math.floor(ukeQuality.quality * 0.3);
+
+            const structResult = calcStructureScore(newHand, tile);
+            score += structResult.structureScore * 3;
+
+            handValue._ukeQuality = ukeQuality;
+            handValue._structScore = structResult;
+        }
+
+        return { index: idx, tile, waiting: [], shanten: bestShantenAfterDraw, ukeire, ukeTiles, handValue, score, winTiles, winRemain };
+    }
+
+    function getAllAnalysis(hand) {
+        const results = hand.map((_, i) => analyzeDiscard(hand, i));
+        // Deduplicate same tile value, keep best score
+        const seen = {};
+        const deduped = [];
+        for (const r of results) {
+            const tk = key(r.tile.type, r.tile.index);
+            if (!seen[tk] || r.score > seen[tk].score) {
+                if (seen[tk]) { const idx = deduped.indexOf(seen[tk]); if (idx >= 0) deduped.splice(idx, 1); }
+                seen[tk] = r; deduped.push(r);
+            }
+        }
+        deduped.sort((a, b) => b.score - a.score);
+        return deduped;
+    }
+
+    // ---- Deck & Fast Hand Generation ----
+    function createDeck() {
+        const deck = [];
+        for (let ti = 0; ti < 3; ti++)
+            for (let n = 1; n <= 9; n++)
+                for (let j = 0; j < 4; j++)
+                    deck.push(ti * 9 + (n - 1));
+        return deck;
+    }
+
+    function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function arrayToHand(arr) {
+        return arr.map(v => { const [tn, n] = tileTypeIdx(v); return { type: typeFromNum(tn), index: n }; });
+    }
+
+    const DIFFICULTY = {
+        normal: { maxDiff: 3000, attempts: 100, label: '普通' },
+        hard:   { maxDiff: 1500, attempts: 100, label: '困难' },
+        expert: { maxDiff: 500,  attempts: 100, label: '专家' }
+    };
+
+    // Fast shanten for deck arrays (no object conversion)
+    function fastShantenForArray(arr, excludeIdx) {
+        const c = countArray(arr, excludeIdx);
+        return _calcShantenCount(c, excludeIdx >= 0 ? arr.length - 1 : arr.length);
+    }
+
+    function fastCanWinForArray(arr) {
+        const c = countArray(arr);
+        return canWinArray(c);
+    }
+
+    // Quick discard score (no full analysis, just shanten comparison)
+    // Uses in-place swap instead of filter to avoid array allocation
+    function quickDiscardScore(arr, removeIdx) {
+        // Save and swap with last element
+        const last = arr.length - 1;
+        const saved = arr[removeIdx];
+        arr[removeIdx] = arr[last];
+        const result = fastShantenForArray(arr, last); // pass excluded index
+        arr[removeIdx] = saved;
+        return result;
+    }
+
+    function generateHand() {
+        console.time('generateHand');
+        const config = DIFFICULTY[currentDifficulty];
+
+        // Strategy: construct a valid hand by building mentsu + taatsu, then verify
+        // This guarantees we almost always get a good hand on first try
+        const deck = createDeck();
+        // Valid hand sizes must be 3n+2: 2, 5, 8, 11, 14
+        const validSizes = [2, 5, 8, 11, 14];
+        const weights = [1, 2, 3, 3, 1]; // 8 and 11 most common
+        const total = weights.reduce((a, b) => a + b, 0);
+        let r = Math.random() * total, n = 8;
+        for (let i = 0; i < 5; i++) { r -= weights[i]; if (r <= 0) { n = validSizes[i]; break; } }
+        const candidates = [];
+        for (let t = 0; t < config.attempts; t++) {
+            const hand = shuffle(deck).slice(0, n);
+
+            if (fastCanWinForArray(hand)) continue;
+            const shanten = fastShantenForArray(hand);
+            if (shanten < -1 || shanten > 5) continue;
+
+            let bestShanten = 99, secondShanten = 99, bestCount = 0;
+            for (let i = 0; i < hand.length; i++) {
+                const ns = quickDiscardScore(hand, i);
+                if (ns < bestShanten) { secondShanten = bestShanten; bestShanten = ns; bestCount = 1; }
+                else if (ns === bestShanten) { bestCount++; }
+                else if (ns < secondShanten) { secondShanten = ns; }
+            }
+            if (bestShanten >= 3 && bestShanten === secondShanten) continue;
+
+            candidates.push({ hand, bestShanten, secondShanten, diff: secondShanten - bestShanten, bestCount });
+            if (candidates.length >= 10) break; // enough candidates
+        }
+
+        let result;
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => b.diff - a.diff);
+            const pick = Math.floor(Math.random() * Math.min(3, candidates.length));
+            result = arrayToHand(candidates[pick].hand);
+        } else {
+            result = generateConstructedHand(n);
+        }
+        console.timeEnd('generateHand');
+        return result;
+    }
+
+    // Constructed hand generator - guaranteed to produce a valid practice hand
+    function generateConstructedHand(n) {
+        const deck = createDeck();
+        // Try harder with relaxed filters
+        for (let t = 0; t < 200; t++) {
+            const hand = shuffle(deck).slice(0, n);
+            if (fastCanWinForArray(hand)) continue;
+            const shanten = fastShantenForArray(hand);
+            if (shanten < 0 || shanten > 5) continue;
+            // Any hand with shanten <= 5 is acceptable for fallback
+            return arrayToHand(hand);
+        }
+        // Last resort: just return a random hand
+        return arrayToHand(shuffle(deck).slice(0, n));
+    }
+
+    // ---- UI Functions ----
+    function setDifficulty(d) {
+        currentDifficulty = d;
+        document.querySelectorAll('.difficulty').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + d).classList.add('active');
+    }
+
+    function togglePrinciples() {
+        document.getElementById('principlesContent').classList.toggle('open');
+        document.getElementById('principlesArrow').classList.toggle('open');
+    }
+
+    let toastTimer = 0;
+    function showToast(msg, duration) {
+        duration = duration || 2000;
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+    }
+
+    function startPractice() {
+        if (isGenerating) return;
+        isGenerating = true;
+        practiceActive = false;
+
+        const container = document.getElementById('tilesContainer');
+        container.innerHTML = '<div class="loading">🔄 正在生成牌型...</div>';
+        document.getElementById('startBtn').disabled = true;
+
+        // Use setTimeout(0) to let UI update first, then compute
+        setTimeout(() => {
+            cachedAnalysis = null;
+            currentHand = generateHand();
+            currentHandArray = handToArray(currentHand);
+            practiceActive = true;
+            _lastAnsweredIdx = -1;
+            isGenerating = false;
+            document.getElementById('startBtn').disabled = false;
+
+            renderTiles(currentHand, 'tilesContainer');
+
+            const shanten = calcShantenFast(currentHandArray);
+
+            document.getElementById('tileCountDisplay').textContent =
+                '当前手牌：' + currentHand.length + ' 张 | 状态：' +
+                (shanten === 0 ? '听牌' : shanten + '向听');
+
+            let diffText = shanten <= 1 ? ' 😊 可以试试' : shanten <= 3 ? ' 🔥 有难度' : ' 💀 超难';
+            document.getElementById('analysisPanel').innerHTML =
+                '<div class="analysis-title">📊 当前状态</div>' +
+                '<p style="color:#555"><strong>' + currentHand.length + '张牌</strong>，当前<strong>' + shantenText(shanten) + '</strong>' + diffText + '</p>' +
+                '<p style="color:#888;margin-top:6px">仔细思考：打出哪张牌最优？</p>';
+            document.getElementById('hintBtn').disabled = false;
+        }, 30);
+    }
+
+    function showHint() {
+        if (!practiceActive && !currentHand.length) return;
+
+        // Clear cache and compute
+        const analysis = getAllAnalysis(currentHand);
+        cachedAnalysis = analysis;
+        const best = analysis[0];
+        const d = getDisplay(best.tile);
+
+        document.querySelectorAll('#tilesContainer .tile').forEach(t => {
+            if (parseInt(t.dataset.idx) === best.index) t.classList.add('hint-glow', 'pulse');
+        });
+        document.getElementById('analysisPanel').innerHTML =
+            '<div class="analysis-title">💡 提示</div>' +
+            '<p>建议打出：<strong>' + d.emoji + ' ' + d.text + '</strong></p>' +
+            '<p>打出后：' + shantenText(best.shanten) + ' | 面子：' + best.handValue.melds + ' | 搭子：' + best.handValue.taatsu + ' | 进张：' + best.ukeire + '张</p>';
+    }
+
+    function renderTiles(hand, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const sorted = hand.map((t, i) => ({ t, i })).sort((a, b) => {
+            const oa = TILE_TYPES[a.t.type].order, ob = TILE_TYPES[b.t.type].order;
+            return oa !== ob ? oa - ob : a.t.index - b.t.index;
+        });
+        let prevType = null;
+        for (const { t, i } of sorted) {
+            if (prevType && prevType !== t.type) {
+                const sep = document.createElement('div');
+                sep.className = 'tile-separator';
+                container.appendChild(sep);
+            }
+            prevType = t.type;
+            const d = getDisplay(t);
+            const isCustom = containerId === 'custom-tiles-display';
+            const div = document.createElement('div');
+            div.className = 'tile ' + d.cls;
+            div.dataset.idx = i;
+            div.innerHTML = '<span class="tile-emoji">' + d.emoji + '</span><span class="tile-label">' + d.text + '</span>';
+            div.onclick = function () { isCustom ? selectCustomTile(i) : selectTile(i); };
+            container.appendChild(div);
+        }
+    }
+
+    function renderList(tiles) {
+        if (!tiles || tiles.length === 0) return '<span style="color:#999">无</span>';
+        const c = {};
+        tiles.forEach(t => { const k = key(t.type, t.index); c[k] = (c[k] || 0) + (t.remaining || 1); });
+        let html = '';
+        const shown = {};
+        for (const t of tiles) {
+            const k = key(t.type, t.index);
+            if (!shown[k]) {
+                const d = getDisplay(t);
+                html += '<span class="waiting-tile">' + d.emoji + d.text + ' x' + c[k] + '</span>';
+                shown[k] = true;
+            }
+        }
+        return html;
+    }
+
+    let _lastAnsweredIdx = -1; // track which tile was already scored to avoid double-counting
+
+    function selectTile(idx) {
+        if (!practiceActive) return;
+        document.querySelectorAll('#tilesContainer .tile').forEach(t => t.classList.remove('selected'));
+        const el = document.querySelector('#tilesContainer .tile[data-idx="' + idx + '"]');
+        if (el) el.classList.add('selected');
+
+        // Defer heavy computation to allow click feedback to render
+        const hand = currentHand;
+        document.getElementById('hintBtn').disabled = true;
+
+        // Allow re-selection: only block UI briefly during computation
+        const currentIdx = idx;
+        practiceActive = false;
+
+        setTimeout(() => {
+            analyzeChoice(idx, false, currentIdx !== _lastAnsweredIdx);
+            _lastAnsweredIdx = idx;
+            practiceActive = true; // re-enable tile selection for comparison
+        }, 16);
+    }
+
+    function selectCustomTile(idx) {
+        document.querySelectorAll('#custom-tiles-display .tile').forEach(t => t.classList.remove('selected'));
+        const el = document.querySelector('#custom-tiles-display .tile[data-idx="' + idx + '"]');
+        if (el) el.classList.add('selected');
+        setTimeout(() => { analyzeChoice(idx, true); }, 16);
+    }
+
+    function analyzeChoice(idx, isCustom, countScore) {
+        const hand = currentHand;
+        const analysis = cachedAnalysis || getAllAnalysis(hand);
+        let chosen = analysis.find(a => a.index === idx);
+        // If not found by index (deduped duplicate tile), match by tile type+number
+        if (!chosen) {
+            const tile = hand[idx];
+            chosen = analysis.find(a => a.tile.type === tile.type && a.tile.index === tile.index);
+        }
+        if (!chosen) return;
+        const best = analysis[0];
+        const cd = getDisplay(chosen.tile);
+        const bd = getDisplay(best.tile);
+
+        const ratio = chosen.score / best.score;
+        let cls, icon, txt, ok;
+        if (ratio >= 0.98) { cls = 'result-good'; icon = '✅'; txt = '完美的选择！'; ok = true; }
+        else if (ratio >= 0.85) { cls = 'result-neutral'; icon = '⚠️'; txt = '接近最佳'; ok = true; }
+        else { cls = 'result-bad'; icon = '❌'; txt = '不是最佳'; ok = false; }
+
+        // Only count score on the first answer; re-selections for comparison don't affect stats
+        if (!isCustom && countScore !== false) { if (ok) correctCount++; else wrongCount++; updateStats(); saveStats(); }
+
+        const diff = analysis.length >= 2 ? best.score - analysis[1].score : 0;
+        let closeCallHtml = '';
+        if (diff < 500 && analysis.length >= 2) closeCallHtml = '<div class="close-call">🎯 这是一手极难的牌！最佳和次佳只差 ' + diff + ' 分</div>';
+
+        let html = '<div class="analysis-title">📊 分析结果</div>' + closeCallHtml +
+            '<div class="result-item ' + cls + '"><h3>' + icon + ' 你打出：' + cd.emoji + ' ' + cd.text + '</h3><p>' + txt + '</p></div>' +
+            '<div class="structure-info"><strong>打出后的牌型分析：</strong><ul>' +
+            '<li>摸牌后最低向听：' + shantenText(chosen.shanten) + '</li>' +
+            '<li>有效进张：' + chosen.ukeire + ' 张</li>' +
+            (chosen.winTiles > 0 ? '<li style="color:var(--gold)">🎉 摸' + chosen.winTiles + '种牌可直接胡，共' + chosen.winRemain + '张</li>' : '');
+
+        // Show ukeire quality info if available
+        if (chosen.handValue._ukeQuality && chosen.ukeire > 0) {
+            const uq = chosen.handValue._ukeQuality;
+            if (uq.tenpaiCount > 0) {
+                html += '<li style="color:var(--gold)">进张深度：' + uq.tenpaiCount + '种进张可直接听牌，听牌面' + uq.tenpaiWidth + '种</li>';
+            }
+        }
+
+        html += '</ul></div>';
+
+        html += '<table class="score-table"><tr><th>排名</th><th>选项</th><th>向听</th><th>进张</th><th>能胡</th><th>结构</th><th>评分</th></tr>';
+        for (let i = 0; i < Math.min(analysis.length, 8); i++) {
+            const a = analysis[i]; const d = getDisplay(a.tile);
+            const isBest = i === 0, isChosen = a.index === idx || (a.tile.type === hand[idx].type && a.tile.index === hand[idx].index);
+            const st = a.handValue._structScore;
+            const structStr = st ? (st.melds + '面' + st.pairs + '对' + st.adjTaatsu + '搭') : a.handValue.melds + '面';
+            const winStr = a.winTiles > 0 ? a.winTiles + '种' : '-';
+            html += '<tr class="' + (isBest ? 'best ' : '') + (isChosen ? 'chosen-row' : '') + '">' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' + d.emoji + ' ' + d.text + (isBest ? ' ⭐' : '') + (isChosen ? ' 👆' : '') + '</td>' +
+                '<td>' + a.shanten + '</td><td>' + a.ukeire + '</td><td>' + winStr + '</td><td>' + structStr + '</td><td>' + a.score + '</td></tr>';
+        }
+        html += '</table>';
+
+        if (chosen.winTiles > 0) {
+            html += '<div class="detail-section"><h4>🎉 打出后可听牌！</h4><p>摸 <strong>' + chosen.winTiles + '</strong> 种牌可直接胡牌，共 <strong>' + chosen.winRemain + '</strong> 张</p></div>';
+        } else if (chosen.ukeTiles.length > 0) {
+            html += '<div class="detail-section"><h4>📥 有效进张牌：</h4><div class="waiting-tiles">' + renderList(chosen.ukeTiles) + '</div></div>';
+        }
+
+        if (idx !== best.index) {
+            let bestDetail = '<li>摸后最低向听：' + best.shanten + '</li><li>有效进张：' + best.ukeire + ' 张</li>';
+            if (best.winTiles > 0) bestDetail += '<li style="color:var(--gold)">摸' + best.winTiles + '种牌可直接胡</li>';
+            html += '<div class="recommendation"><h3>💡 最佳选择：打 ' + bd.emoji + ' ' + bd.text + '</h3><ul>' + bestDetail + '</ul>';
+            if (best.winTiles > 0) html += '<p>摸 <strong>' + best.winTiles + '</strong> 种牌可直接胡，共 <strong>' + best.winRemain + '</strong> 张</p>';
+            html += '<p style="margin-top:12px;color:#888">评分差距：<strong>' + (best.score - chosen.score) + '</strong> 分</p></div>';
+        } else {
+            html += '<div class="recommendation"><h3>🎉 完美！这就是最佳选择！</h3></div>';
+        }
+
+        const panelId = isCustom ? 'customAnalysisPanel' : 'analysisPanel';
+        document.getElementById(panelId).innerHTML = html;
+        if (!isCustom) document.getElementById('hintBtn').disabled = true;
+    }
+
+    function updateStats() {
+        document.getElementById('correct').textContent = correctCount;
+        document.getElementById('wrong').textContent = wrongCount;
+        const t = correctCount + wrongCount;
+        document.getElementById('rate').textContent = t > 0 ? Math.round(correctCount / t * 100) + '%' : '-';
+    }
+
+    // ---- Custom Mode ----
+    function initCustomMode() {
+        for (const type of TYPES) {
+            const selector = document.getElementById(type + '-selector');
+            selector.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const info = TILE_TYPES[type];
+                const btn = document.createElement('button');
+                btn.className = 'tile-btn ' + type;
+                btn.innerHTML = '<span>' + info.emojis[i - 1] + '</span><span class="tile-btn-label">' + info.tiles[i - 1] + info.name + '</span>';
+                btn.dataset.type = type; btn.dataset.index = i;
+                btn.onclick = function () { addCustomTile(type, i); };
+                selector.appendChild(btn);
+            }
+        }
+        updateInputDisplay();
+    }
+
+    function addCustomTile(type, index) {
+        const c = countTiles(customHand);
+        if (c[key(type, index)] >= 4) return;
+        customHand.push({ type, index, id: customHand.length });
+        updateInputDisplay();
+    }
+
+    function removeCustomTile(idx) { customHand.splice(idx, 1); updateInputDisplay(); }
+    function clearCustomHand() { customHand = []; updateInputDisplay(); }
+
+    function updateInputDisplay() {
+        const container = document.getElementById('custom-tiles-input');
+        document.getElementById('selected-count').textContent = customHand.length;
+
+        if (customHand.length === 0) {
+            container.innerHTML = '<span style="color: rgba(255,255,255,0.3)">点击上方牌面选择</span>';
+        } else {
+            const sorted = customHand.map((t, i) => ({ t, i })).sort((a, b) => {
+                const oa = TILE_TYPES[a.t.type].order, ob = TILE_TYPES[b.t.type].order;
+                return oa !== ob ? oa - ob : a.t.index - b.t.index;
+            });
+            container.innerHTML = '';
+            let prevType = null;
+            for (const { t, i } of sorted) {
+                if (prevType && prevType !== t.type) {
+                    const sep = document.createElement('div'); sep.className = 'tile-separator'; container.appendChild(sep);
+                }
+                prevType = t.type;
+                const d = getDisplay(t);
+                const div = document.createElement('div');
+                div.className = 'tile ' + d.cls;
+                div.innerHTML = '<span class="tile-emoji">' + d.emoji + '</span><span class="tile-label">' + d.text + '</span>';
+                div.onclick = function () { removeCustomTile(i); };
+                div.title = '点击移除';
+                container.appendChild(div);
+            }
+        }
+
+        document.getElementById('startCustomBtn').disabled = customHand.length < 2;
+        const c = countTiles(customHand);
+        for (const type of TYPES) for (let i = 1; i <= 9; i++) {
+            const btn = document.querySelector('#' + type + '-selector .tile-btn[data-type="' + type + '"][data-index="' + i + '"]');
+            if (btn) btn.disabled = c[key(type, i)] >= 4;
+        }
+    }
+
+    function parseTextInput() {
+        const input = document.getElementById('text-input').value.trim();
+        if (!input) { showToast('请输入手牌文字'); return; }
+        customHand = [];
+        const patterns = [
+            { regex: /(\d+)[万wW]/g, type: 'wan' },
+            { regex: /(\d+)[筒tT圆]/g, type: 'tong' },
+            { regex: /(\d+)[索sS条]/g, type: 'suo' }
+        ];
+        let found = false;
+        for (const p of patterns) {
+            let match; p.regex.lastIndex = 0;
+            while ((match = p.regex.exec(input)) !== null) {
+                found = true;
+                for (const ch of match[1]) {
+                    const n = parseInt(ch);
+                    if (n >= 1 && n <= 9) {
+                        const c = countTiles(customHand);
+                        if (c[key(p.type, n)] < 4) customHand.push({ type: p.type, index: n, id: customHand.length });
+                    }
+                }
+            }
+        }
+        if (!found) { showToast('未能解析到手牌，请检查格式（如：112万 34筒 5索）'); return; }
+        updateInputDisplay();
+        showToast('已解析 ' + customHand.length + ' 张手牌');
+    }
+
+    function startCustomGame() {
+        if (customHand.length < 2) return;
+        document.getElementById('custom-input-phase').classList.add('hidden');
+        document.getElementById('custom-game-phase').classList.add('active');
+        currentHand = [...customHand];
+        currentHandArray = handToArray(currentHand);
+        renderTiles(currentHand, 'custom-tiles-display');
+        const shanten = calcShantenFast(currentHandArray);
+        document.getElementById('customTileCount').textContent = '当前手牌：' + currentHand.length + ' 张 | 状态：' + (shanten === 0 ? '听牌' : shanten + '向听');
+        document.getElementById('customAnalysisPanel').innerHTML = '<div class="analysis-title">📊 分析结果</div><p style="color:#555">当前<strong>' + shantenText(shanten) + '</strong>，请点击选择要打出的牌</p>';
+    }
+
+    function resetCustomInput() {
+        document.getElementById('custom-input-phase').classList.remove('hidden');
+        document.getElementById('custom-game-phase').classList.remove('active');
+        customHand = []; updateInputDisplay();
+    }
+
+    function showCustomHint() {
+        const analysis = getAllAnalysis(currentHand);
+        const best = analysis[0]; const d = getDisplay(best.tile);
+        document.querySelectorAll('#custom-tiles-display .tile').forEach(t => {
+            if (parseInt(t.dataset.idx) === best.index) t.classList.add('hint-glow', 'pulse');
+        });
+        document.getElementById('customAnalysisPanel').innerHTML =
+            '<div class="analysis-title">💡 提示</div>' +
+            '<p>建议打出：<strong>' + d.emoji + ' ' + d.text + '</strong></p>' +
+            '<p>打出后：' + shantenText(best.shanten) + ' | 面子：' + best.handValue.melds + ' | 搭子：' + best.handValue.taatsu + ' | 进张：' + best.ukeire + '张</p>';
+    }
+
+    function switchMode(mode) {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + mode).classList.add('active');
+        document.getElementById('practice-section').classList.toggle('hidden', mode !== 'practice');
+        document.getElementById('custom-section').classList.toggle('active', mode === 'custom');
+        document.getElementById('sim-section').classList.toggle('active', mode === 'simulation');
+        if (mode === 'custom') {
+            document.getElementById('custom-input-phase').classList.remove('hidden');
+            document.getElementById('custom-game-phase').classList.remove('active');
+        }
+    }
+
+    // ---- Init ----
+    loadStats();
+    initCustomMode();
+    // Speed slider
+    document.getElementById('simSpeedSlider').addEventListener('input', function() {
+        document.getElementById('simSpeedLabel').textContent = (this.value / 1000).toFixed(1) + 's';
+    });
+
+    /* ============================================================
+     *  模拟对局模式 - 4人打牌，你来推理对手手牌
+     * ============================================================ */
+
+    const SIM = {
+        state: null, // game state object
+        timer: null,
+        phase: 'idle', // idle, waiting_draw, waiting_discard, ai_turn, game_over
+        revealHands: false
+    };
+
+    const PLAYER_NAMES = ['东家', '南家(你)', '西家', '北家'];
+    const WIND_ICONS = ['東', '南', '西', '北'];
+    const AI_SHANTEN_MODES = ['normal', 'normal', 'hard', 'expert']; // AI difficulty mix
+
+    // ---- State Initialization ----
+    function simStartGame() {
+        if (SIM.timer) { clearTimeout(SIM.timer); SIM.timer = null; }
+
+        const deck = createDeck();
+        const shuffled = shuffle(deck);
+        // Remove 4 kings for广东推倒胡 (no 字牌 in this version, all 108 tiles)
+        // Actually our deck is 108 tiles (27 types × 4), deal 13 each = 52, leave 56 in wall
+        // Simplification: deal 13 tiles to each player
+        const hands = [];
+        for (let p = 0; p < 4; p++) {
+            hands.push(shuffled.slice(p * 13, (p + 1) * 13));
+        }
+        const wall = shuffled.slice(52);
+
+        SIM.state = {
+            hands: hands, // [player0[], player1[], player2[], player3[]] — arrays of tileIdx
+            discards: [[], [], [], []], // tileIdx arrays
+            wall: wall,
+            wallIdx: 0,
+            currentPlayer: 0, // starts from East
+            turnCount: 0,
+            lastDiscard: -1, // tileIdx of last discarded tile
+            lastDiscardPlayer: -1,
+            drawnTile: -1, // tile drawn this turn (for player to discard)
+            phase: 'draw', // draw, discard
+            gameOver: false,
+            winner: -1,
+            winTile: -1,
+            humanPlayer: 1, // Player 1 = South = human
+            melds: [[], [], [], []] // exposed melds (not used in basic mode)
+        };
+
+        SIM.phase = 'ai_turn';
+
+        // Show UI
+        document.getElementById('simYourHand').style.display = '';
+        document.getElementById('simYourDiscards').style.display = '';
+        document.getElementById('simActionBar').style.display = '';
+        document.getElementById('simAnalysisPanel').style.display = '';
+        document.getElementById('simOppRow').style.display = '';
+        document.getElementById('simStartBtn').textContent = '🔄 重新开始';
+        document.getElementById('simDrawBtn').disabled = true;
+        document.getElementById('simAutoBtn').style.display = 'none';
+        document.getElementById('simGuessPanel').style.display = 'none';
+        document.getElementById('simRevealBtn').style.display = '';
+        SIM.revealHands = false;
+        document.getElementById('simRevealBtn').textContent = '👁 偷看手牌';
+        document.getElementById('simRevealBtn').classList.remove('active');
+
+        simRender();
+        simSetMsg('对局开始！东家先摸牌...');
+        simRunAITurns();
+    }
+
+    // ---- Simulation Loop ----
+    function simRunAITurns() {
+        if (!SIM.state || SIM.state.gameOver) return;
+        if (SIM.state.currentPlayer === SIM.state.humanPlayer) {
+            // Human's turn
+            if (SIM.state.phase === 'draw') {
+                SIM.phase = 'waiting_draw';
+                document.getElementById('simDrawBtn').disabled = false;
+                simSetMsg('轮到你摸牌了！点击「摸牌」');
+            } else {
+                SIM.phase = 'waiting_discard';
+                document.getElementById('simAutoBtn').style.display = '';
+                simSetMsg('你摸到了 <span class="discard-anim">' + simTileEmoji(SIM.state.drawnTile) + '</span>，请点击手牌中要打出的牌');
+            }
+            simRender();
+            return;
+        }
+
+        // AI turn
+        SIM.phase = 'ai_turn';
+        const speed = parseInt(document.getElementById('simSpeedSlider').value) || 600;
+        SIM.timer = setTimeout(() => {
+            simAITurn(SIM.state.currentPlayer);
+            if (!SIM.state.gameOver) {
+                // Next player
+                SIM.state.currentPlayer = (SIM.state.currentPlayer + 1) % 4;
+                simRunAITurns();
+            }
+        }, speed);
+        simRender();
+    }
+
+    function simAITurn(player) {
+        const s = SIM.state;
+        // Draw
+        const tile = simDrawFromWall();
+        if (tile === null) { // wall empty = draw
+            s.gameOver = true;
+            s.winner = -1;
+            simShowGameOver('流局！牌山已空，本局无赢家');
+            return;
+        }
+        s.hands[player].push(tile);
+
+        // Check if can win (tsumo)
+        const arr = s.hands[player].slice().sort((a, b) => a - b);
+        const cc = countArray(arr);
+        if (canWinArray(cc)) {
+            s.gameOver = true;
+            s.winner = player;
+            s.winTile = tile;
+            simShowGameOver(PLAYER_NAMES[player] + ' 自摸胡了！');
+            simRender();
+            return;
+        }
+
+        // AI decides which tile to discard
+        const discardIdx = simAIDecideDiscard(player, AI_SHANTEN_MODES[player]);
+        const discardTile = s.hands[player][discardIdx];
+        s.hands[player].splice(discardIdx, 1);
+        s.discards[player].push(discardTile);
+        s.lastDiscard = discardTile;
+        s.lastDiscardPlayer = player;
+        s.turnCount++;
+        s.phase = 'draw'; // reset phase for next player
+
+        // Show a brief message about AI action
+        const [tn, n] = tileTypeIdx(discardTile);
+        const type = typeFromNum(tn);
+        simSetMsg(PLAYER_NAMES[player] + ' 打出 <span class="discard-anim">' +
+            TILE_TYPES[type].emojis[n-1] + '</span>');
+    }
+
+    function simDrawFromWall() {
+        const s = SIM.state;
+        if (s.wallIdx >= s.wall.length) return null;
+        return s.wall[s.wallIdx++];
+    }
+
+    // ---- AI Discard Decision ----
+    // Build a visibility array: how many copies of each tile are still available (not in own hand or own discards)
+    function simBuildVisibility(player) {
+        const s = SIM.state;
+        const hand = s.hands[player];
+        const discards = s.discards[player];
+        const vis = new Int8Array(27);
+        for (let i = 0; i < 27; i++) vis[i] = 4;
+        for (const t of hand) vis[t]--;
+        for (const t of discards) vis[t]--;
+        return vis;
+    }
+
+    // Build full pool: tiles that AI can "see" as unavailable (own hand + own discards + other players' discards)
+    function simBuildPoolSeen(player) {
+        const s = SIM.state;
+        const seen = new Int8Array(27);
+        for (let p = 0; p < 4; p++) {
+            if (p === player) {
+                for (const t of s.hands[p]) seen[t]++;
+            }
+            for (const t of s.discards[p]) seen[t]++;
+        }
+        return seen;
+    }
+
+    // Compute ukeire with actual remaining tile count
+    function simCalcUkeire(c, handLen, poolSeen) {
+        let ukeCount = 0; // total remaining tiles that improve shanten
+        const baseShanten = _calcShantenCount(c, handLen);
+        for (let ti = 0; ti < 3; ti++) {
+            for (let n = 1; n <= 9; n++) {
+                const tidx = ti * 9 + (n - 1);
+                if (c[tidx] < 4) {
+                    c[tidx]++;
+                    const ns = _calcShantenCount(c, handLen + 1);
+                    if (ns < baseShanten) {
+                        const remaining = 4 - poolSeen[tidx];
+                        ukeCount += remaining;
+                    }
+                    c[tidx]--;
+                }
+            }
+        }
+        return ukeCount;
+    }
+
+    function simAIDecideDiscard(player, mode) {
+        const s = SIM.state;
+        const arr = s.hands[player].slice().sort((a, b) => a - b);
+        const poolSeen = simBuildPoolSeen(player);
+        const discards = s.discards[player];
+
+        // Evaluate all candidate discards
+        const candidates = [];
+        for (let i = 0; i < arr.length; i++) {
+            const c = countArray(arr, i);
+            const handLen = arr.length - 1;
+            const shanten = _calcShantenCount(c, handLen);
+            const ukeCount = simCalcUkeire(c, handLen, poolSeen);
+            const tile = arr[i];
+            const suit = Math.floor(tile / 9);
+            const num = tile % 9 + 1;
+
+            let score = -shanten * 1000000 + ukeCount * 100;
+
+            // Tile value adjustments (shared across all modes)
+            // Prefer discarding isolated tiles (no adjacent tiles in hand)
+            let adjInHand = 0;
+            for (let delta = -2; delta <= 2; delta++) {
+                if (delta === 0) continue;
+                const adj = tile + delta;
+                if (adj < suit * 9 || adj >= (suit + 1) * 9) continue;
+                for (let j = 0; j < arr.length; j++) {
+                    if (j !== i && arr[j] === adj) { adjInHand++; break; }
+                }
+            }
+            // Tiles with no adjacent tiles in hand are good discard candidates
+            if (adjInHand === 0 && c[tile] === 0) score += 50;
+
+            // Penalize discarding tiles in the middle of sequences
+            if (num >= 3 && num <= 7 && adjInHand >= 2) score -= 30;
+
+            // Edge tiles (1,9) slightly less useful for sequences
+            if (num === 1 || num === 9) score += 10;
+
+            candidates.push({ idx: i, shanten, ukeCount, score, tile, adjInHand });
+        }
+
+        candidates.sort((a, b) => b.score - a.score);
+
+        if (mode === 'expert') {
+            // Expert: always pick the best
+            return candidates[0].idx;
+        } else if (mode === 'hard') {
+            // Hard: 85% best, 15% from top-3
+            if (Math.random() < 0.85) return candidates[0].idx;
+            const pool = candidates.slice(0, Math.min(3, candidates.length));
+            return pool[Math.floor(Math.random() * pool.length)].idx;
+        } else {
+            // Normal: 60% best, 40% from top-3 (much improved from 40/60)
+            if (Math.random() < 0.60) return candidates[0].idx;
+            const pool = candidates.slice(0, Math.min(3, candidates.length));
+            return pool[Math.floor(Math.random() * pool.length)].idx;
+        }
+    }
+
+    function simBestDiscardByShanten(arr) {
+        // Simpler version for player advice (uses all visible discards as pool)
+        const s = SIM.state;
+        const poolSeen = new Int8Array(27);
+        // Player sees: own hand + all discards
+        for (const t of arr) poolSeen[t]++;
+        for (let p = 0; p < 4; p++) for (const t of s.discards[p]) poolSeen[t]++;
+
+        let bestIdx = 0, bestScore = -Infinity;
+        for (let i = 0; i < arr.length; i++) {
+            const c = countArray(arr, i);
+            const handLen = arr.length - 1;
+            const shanten = _calcShantenCount(c, handLen);
+            const ukeCount = simCalcUkeire(c, handLen, poolSeen);
+            let score = -shanten * 1000000 + ukeCount * 100;
+            if (score > bestScore) { bestScore = score; bestIdx = i; }
+        }
+        return bestIdx;
+    }
+
+    // ---- Player Actions ----
+    function simPlayerDraw() {
+        if (SIM.phase !== 'waiting_draw') return;
+        const s = SIM.state;
+        const tile = simDrawFromWall();
+        if (tile === null) {
+            s.gameOver = true;
+            s.winner = -1;
+            simShowGameOver('流局！牌山已空');
+            return;
+        }
+        s.hands[s.humanPlayer].push(tile);
+        s.drawnTile = tile;
+        s.phase = 'discard';
+        SIM.phase = 'waiting_discard';
+
+        // Check if can win
+        const arr = s.hands[s.humanPlayer].slice().sort((a, b) => a - b);
+        const cc = countArray(arr);
+        if (canWinArray(cc)) {
+            s.gameOver = true;
+            s.winner = s.humanPlayer;
+            s.winTile = tile;
+            simShowGameOver('恭喜你自摸胡了！🎉');
+            simRender();
+            return;
+        }
+
+        document.getElementById('simDrawBtn').disabled = true;
+        document.getElementById('simAutoBtn').style.display = '';
+        simSetMsg('你摸到了 <span class="discard-anim">' + simTileEmoji(tile) + '</span>，请点击要打出的牌');
+        simRender();
+    }
+
+    function simPlayerDiscard(handIdx) {
+        if (SIM.phase !== 'waiting_discard') return;
+        const s = SIM.state;
+        const tile = s.hands[s.humanPlayer][handIdx];
+        s.hands[s.humanPlayer].splice(handIdx, 1);
+        s.discards[s.humanPlayer].push(tile);
+        s.lastDiscard = tile;
+        s.lastDiscardPlayer = s.humanPlayer;
+        s.drawnTile = -1;
+        s.turnCount++;
+
+        document.getElementById('simAutoBtn').style.display = 'none';
+
+        // Advance to next player
+        s.currentPlayer = (s.currentPlayer + 1) % 4;
+        s.phase = 'draw';
+
+        simSetMsg(PLAYER_NAMES[s.humanPlayer] + ' 打出 <span class="discard-anim">' + simTileEmoji(tile) + '</span>');
+        simRender();
+        simRunAITurns();
+    }
+
+    function simAutoDiscard() {
+        if (SIM.phase !== 'waiting_discard') return;
+        const s = SIM.state;
+        const arr = s.hands[s.humanPlayer].slice().sort((a, b) => a - b);
+        const bestIdx = simBestDiscardByShanten(arr);
+        // Find the actual index in unsorted hand
+        const bestTile = arr[bestIdx];
+        const actualIdx = s.hands[s.humanPlayer].indexOf(bestTile);
+        if (actualIdx >= 0) simPlayerDiscard(actualIdx);
+    }
+
+    // ---- Reveal Hands (Cheat/Learning Mode) ----
+    function simToggleReveal() {
+        if (!SIM.state || SIM.state.gameOver) {
+            showToast('请先开始一局对局');
+            return;
+        }
+        SIM.revealHands = !SIM.revealHands;
+        const btn = document.getElementById('simRevealBtn');
+        if (SIM.revealHands) {
+            btn.textContent = '🙈 隐藏手牌';
+            btn.classList.add('active');
+        } else {
+            btn.textContent = '👁 偷看手牌';
+            btn.classList.remove('active');
+        }
+        simRender();
+    }
+
+    // ---- Tile Guessing / Deduction ----
+    function simToggleGuess() {
+        const panel = document.getElementById('simGuessPanel');
+        if (!SIM.state || SIM.state.gameOver) {
+            showToast('请先开始一局对局');
+            return;
+        }
+        const visible = panel.style.display !== 'none';
+        panel.style.display = visible ? 'none' : '';
+        if (!visible) simUpdateGuessPanel();
+    }
+
+    function simToggleGuessContent() {
+        document.getElementById('simGuessContent').classList.toggle('open');
+        document.getElementById('simGuessArrow').classList.toggle('open');
+    }
+
+    function simUpdateGuessPanel() {
+        const s = SIM.state;
+        if (!s) return;
+
+        // Build tile pool: what tiles exist and where
+        // All 27 types × 4 copies = 108 tiles total
+        const totalCopies = new Int8Array(27);
+        for (let i = 0; i < 27; i++) totalCopies[i] = 4;
+
+        // Subtract known tiles: player's hand, all discards, wall remaining
+        const known = new Int8Array(27);
+        // Player's own hand (known to player)
+        for (const t of s.hands[s.humanPlayer]) known[t]++;
+        // All discards
+        for (let p = 0; p < 4; p++) for (const t of s.discards[p]) known[t]++;
+        // Wall tiles are unknown to the player (but we can show total remaining)
+
+        // For each opponent, compute possible hand tiles
+        // Method: tiles not accounted for in player's hand + all discards
+        const unaccounted = new Int8Array(27);
+        for (let i = 0; i < 27; i++) unaccounted[i] = totalCopies[i] - known[i];
+
+        // Shanten-based filtering for each opponent
+        let html = '';
+        for (let p = 0; p < 4; p++) {
+            if (p === s.humanPlayer) continue;
+
+            html += '<div class="sim-guess-player">';
+            html += '<div class="sim-guess-player-name">' + WIND_ICONS[p] + ' ' + PLAYER_NAMES[p] + '</div>';
+
+            const oppHandSize = s.hands[p].length;
+            const oppDiscards = s.discards[p];
+
+            // Advanced deduction: analyze discards to narrow down possibilities
+            // Strategy: tiles that opponent discarded are clearly not in their hand
+            // Tiles adjacent to what they kept/didn't discard are more likely
+            const deduction = simDeduceHand(p, unaccounted, oppHandSize);
+
+            if (deduction.tiles.length > 0 && deduction.confidence > 0) {
+                html += '<div class="sim-guess-tiles">';
+                for (const t of deduction.tiles) {
+                    const [tn, n] = tileTypeIdx(t);
+                    const type = typeFromNum(tn);
+                    const info = TILE_TYPES[type];
+                    html += '<div class="sim-guess-tile ' + type + '">' +
+                        '<span style="font-size:13px">' + info.emojis[n - 1] + '</span>' +
+                        '<span class="sim-guess-label">' + info.tiles[n - 1] + info.name + '</span></div>';
+                }
+                html += '</div>';
+                html += '<div class="sim-guess-certainty">置信度：' + deduction.confidence +
+                    '% · 推测手牌：' + oppHandSize + '张 · 已打牌：' + oppDiscards.length + '张</div>';
+            } else {
+                html += '<div class="sim-guess-unknown">信息不足，继续观察出牌...</div>';
+            }
+            html += '</div>';
+        }
+
+        document.getElementById('simGuessContent').innerHTML = html;
+    }
+
+    function simDeduceHand(player, unaccounted, handSize) {
+        const s = SIM.state;
+        const discards = s.discards[player];
+
+        if (discards.length < 3) return { tiles: [], confidence: 0 };
+
+        // Deduction logic:
+        // 1. Tiles discarded by this player are NOT in their hand
+        // 2. Build "safe" pool = unaccounted tiles
+        // 3. Analyze discard patterns:
+        //    - If they discarded early tiles (1,9), they likely don't have that suit's edge
+        //    - If they discarded middle tiles, they might be chasing a different suit
+        //    - Tiles they DIDN'T discard from common sequences are more likely held
+
+        const discardSet = new Set(discards);
+        const candidatePool = [];
+
+        // Start with all unaccounted tiles
+        for (let i = 0; i < 27; i++) {
+            for (let c = 0; c < unaccounted[i]; c++) {
+                candidatePool.push(i);
+            }
+        }
+
+        if (candidatePool.length === 0) return { tiles: [], confidence: 0 };
+
+        // Score each candidate tile by "likelihood" based on discard analysis
+        const scores = new Float32Array(27);
+
+        for (let i = 0; i < 27; i++) {
+            if (unaccounted[i] === 0) continue;
+
+            const suit = Math.floor(i / 9);
+            const num = i % 9 + 1;
+            let score = 1.0;
+
+            // Bonus: tiles that form sequences/pairs with non-discarded tiles are more likely
+            // Check if adjacent tiles were NOT discarded by this player
+            for (let delta = -2; delta <= 2; delta++) {
+                const adj = i + delta;
+                if (adj < suit * 9 || adj >= (suit + 1) * 9) continue;
+                if (!discardSet.has(adj)) score += 0.3;
+                if (discardSet.has(adj)) score -= 0.2;
+            }
+
+            // Penalty: edge tiles (1,9) discarded early suggest abandoning that suit edge
+            const discardOrder = {}; // map tile -> first discard turn
+            for (let d = 0; d < discards.length; d++) {
+                if (!(discards[d] in discardOrder)) discardOrder[discards[d]] = d;
+            }
+            if (num === 1 || num === 9) {
+                const firstDiscardOfSameSuit = discards.find(t => Math.floor(t / 9) === suit);
+                if (firstDiscardOfSameSuit !== undefined && (firstDiscardOfSameSuit === 1 || firstDiscardOfSameSuit === 9)) {
+                    if (!discardSet.has(i)) score += 0.1; // might still hold if not discarded
+                }
+            }
+
+            // Bonus: tiles not seen in anyone's discards are more likely held by someone
+            let totalDiscardCount = 0;
+            for (let p = 0; p < 4; p++) {
+                for (const t of s.discards[p]) if (t === i) totalDiscardCount++;
+            }
+            if (totalDiscardCount === 0) score += 0.5; // completely unseen = more likely held
+            else if (totalDiscardCount === 1) score += 0.1;
+
+            scores[i] = Math.max(0, score);
+        }
+
+        // Select top tiles (most likely in this player's hand)
+        const indexed = [];
+        for (let i = 0; i < 27; i++) {
+            if (unaccounted[i] > 0 && scores[i] > 0) {
+                indexed.push({ tile: i, score: scores[i] });
+            }
+        }
+        indexed.sort((a, b) => b.score - a.score);
+
+        // Take top N tiles (handSize)
+        const topN = indexed.slice(0, Math.min(handSize, indexed.length));
+        const tiles = topN.map(t => t.tile);
+
+        // Confidence based on how many discards we have vs hand size
+        const discardRatio = discards.length / (discards.length + handSize);
+        const confidence = Math.min(85, Math.round(discardRatio * 70 + 15));
+
+        return { tiles, confidence };
+    }
+
+    // ---- Rendering ----
+    function simRender() {
+        const s = SIM.state;
+        if (!s) return;
+
+        // Opponents
+        const oppRow = document.getElementById('simOppRow');
+        oppRow.innerHTML = '';
+        for (let p = 0; p < 4; p++) {
+            if (p === s.humanPlayer) continue;
+            const panel = document.createElement('div');
+            panel.className = 'sim-player-panel' +
+                (s.currentPlayer === p ? ' active-turn' : '');
+
+            let html = '<div class="sim-player-name"><span class="wind-icon">' + WIND_ICONS[p] + '</span> ' +
+                PLAYER_NAMES[p] + '</div>';
+            html += '<div class="sim-info">' + s.hands[p].length + '张手牌</div>';
+
+            // Hand (face down, or revealed)
+            html += '<div class="sim-hand-tiles">';
+            if (SIM.revealHands) {
+                const sortedHand = s.hands[p].slice().sort((a, b) => a - b);
+                let prevSuit = -1;
+                for (const t of sortedHand) {
+                    const suit = Math.floor(t / 9);
+                    if (prevSuit >= 0 && prevSuit !== suit) {
+                        html += '<div style="width:4px"></div>';
+                    }
+                    prevSuit = suit;
+                    const [tn, n] = tileTypeIdx(t);
+                    const type = typeFromNum(tn);
+                    const info = TILE_TYPES[type];
+                    html += '<div class="sim-tile-back revealed ' + type + '">' +
+                        '<span>' + info.emojis[n - 1] + '</span></div>';
+                }
+            } else {
+                for (let i = 0; i < s.hands[p].length; i++) {
+                    html += '<div class="sim-tile-back">🀄</div>';
+                }
+            }
+            html += '</div>';
+
+            // Discards
+            if (s.discards[p].length > 0) {
+                html += '<div class="sim-discards">';
+                for (let d = 0; d < s.discards[p].length; d++) {
+                    const t = s.discards[p][d];
+                    const isLast = (s.lastDiscardPlayer === p && d === s.discards[p].length - 1);
+                    const [tn, n] = tileTypeIdx(t);
+                    const type = typeFromNum(tn);
+                    const info = TILE_TYPES[type];
+                    html += '<div class="sim-discard-tile ' + type + (isLast ? ' last-discard' : '') + '">' +
+                        '<span>' + info.emojis[n - 1] + '</span></div>';
+                }
+                html += '</div>';
+            }
+
+            panel.innerHTML = html;
+            oppRow.appendChild(panel);
+        }
+
+        // Your hand
+        const yourTiles = document.getElementById('simYourTiles');
+        yourTiles.innerHTML = '';
+        const hand = s.hands[s.humanPlayer];
+        const sorted = hand.map((t, i) => ({ t, i })).sort((a, b) => {
+            const oa = Math.floor(a.t / 9), ob = Math.floor(b.t / 9);
+            return oa !== ob ? oa - ob : a.t - b.t;
+        });
+
+        let prevSuit = -1;
+        for (const { t, i } of sorted) {
+            const suit = Math.floor(t / 9);
+            if (prevSuit >= 0 && prevSuit !== suit) {
+                const sep = document.createElement('div');
+                sep.className = 'tile-separator';
+                yourTiles.appendChild(sep);
+            }
+            prevSuit = suit;
+
+            const [tn, n] = tileTypeIdx(t);
+            const type = typeFromNum(tn);
+            const info = TILE_TYPES[type];
+            const div = document.createElement('div');
+            div.className = 'sim-tile-small ' + type;
+            div.innerHTML = '<span>' + info.emojis[n - 1] + '</span><span class="sim-tile-label">' + info.tiles[n - 1] + info.name + '</span>';
+            div.title = '点击打出这张牌';
+            div.onclick = function () { simPlayerDiscard(i); };
+            yourTiles.appendChild(div);
+        }
+
+        // Your discards
+        const yourDiscards = document.getElementById('simYourDiscards');
+        yourDiscards.innerHTML = '';
+        if (s.discards[s.humanPlayer].length > 0) {
+            for (const t of s.discards[s.humanPlayer]) {
+                const [tn, n] = tileTypeIdx(t);
+                const type = typeFromNum(tn);
+                const info = TILE_TYPES[type];
+                const isLast = (s.lastDiscardPlayer === s.humanPlayer && t === s.lastDiscard);
+                const div = document.createElement('div');
+                div.className = 'sim-discard-tile ' + type + (isLast ? ' last-discard' : '');
+                div.innerHTML = '<span>' + info.emojis[n - 1] + '</span>';
+                yourDiscards.appendChild(div);
+            }
+        }
+
+        // Remaining
+        const remaining = s.wall.length - s.wallIdx;
+        document.getElementById('simRemaining').textContent =
+            '牌山剩余：' + remaining + '张 · 回合：' + s.turnCount;
+
+        // Analysis panel
+        simUpdateAnalysisPanel();
+    }
+
+    function simUpdateAnalysisPanel() {
+        const s = SIM.state;
+        if (!s) return;
+        const panel = document.getElementById('simAnalysisPanel');
+
+        const yourHand = s.hands[s.humanPlayer];
+        if (yourHand.length === 0) {
+            panel.innerHTML = '<div class="analysis-title">📊 对局信息</div><p style="color:#888">等待发牌...</p>';
+            return;
+        }
+
+        const arr = yourHand.slice().sort((a, b) => a - b);
+        const shanten = calcShantenFast(arr);
+        const isMyTurn = s.currentPlayer === s.humanPlayer;
+
+        let html = '<div class="analysis-title">📊 你的牌局分析</div>';
+        html += '<div class="structure-info"><ul>';
+        html += '<li>手牌 <strong>' + yourHand.length + '</strong> 张 · ' + shantenText(shanten) + '</li>';
+
+        if (shanten === 0) {
+            const waiting = getWaiting(arrayToHand(yourHand));
+            html += '<li style="color:var(--gold)">🎉 听牌！听 <strong>' + waiting.length + '</strong> 种牌，共 <strong>' +
+                waiting.reduce((s, w) => s + w.remaining, 0) + '</strong> 张</li>';
+            if (waiting.length > 0) {
+                html += '<li>听张：';
+                for (const w of waiting) {
+                    const d = getDisplay(w);
+                    html += d.emoji + d.text + '(' + w.remaining + ') ';
+                }
+                html += '</li>';
+            }
+        } else if (shanten <= 2) {
+            // Show ukeire
+            const c = countArray(arr);
+            let ukeCount = 0;
+            const ukeList = [];
+            for (let ti = 0; ti < 3; ti++) {
+                for (let n = 1; n <= 9; n++) {
+                    const tidx = ti * 9 + (n - 1);
+                    if (c[tidx] < 4) {
+                        c[tidx]++;
+                        const ns = _calcShantenCount(c, arr.length + 1);
+                        if (ns < shanten) {
+                            ukeCount += (4 - (c[tidx] - 1));
+                            ukeList.push({ type: typeFromNum(ti), index: n, remaining: 4 - (c[tidx] - 1) });
+                        }
+                        c[tidx]--;
+                    }
+                }
+            }
+            html += '<li>有效进张：<strong>' + ukeCount + '</strong> 张</li>';
+            if (ukeList.length > 0 && ukeList.length <= 15) {
+                html += '<li>进张牌：' + renderList(ukeList) + '</li>';
+            }
+        }
+
+        if (isMyTurn && SIM.phase === 'waiting_discard') {
+            // Show best discard suggestion
+            const bestIdx = simBestDiscardByShanten(arr);
+            const bestTile = arr[bestIdx];
+            const [tn, n] = tileTypeIdx(bestTile);
+            const type = typeFromNum(tn);
+            const info = TILE_TYPES[type];
+            html += '<li style="color:var(--gold)">💡 建议打出：<strong>' + info.emojis[n-1] + info.tiles[n-1] + info.name + '</strong></li>';
+        }
+
+        html += '</ul></div>';
+        panel.innerHTML = html;
+    }
+
+    // ---- Game Over ----
+    function simShowGameOver(msg) {
+        SIM.phase = 'game_over';
+        SIM.timer = null;
+
+        const s = SIM.state;
+        let html = '<div class="sim-win-overlay" onclick="simCloseOverlay(event)">';
+        html += '<div class="sim-win-dialog">';
+        html += '<h2>' + (s.winner >= 0 ? '🏆' : '🤝') + ' ' + msg + '</h2>';
+
+        if (s.winner >= 0) {
+            html += '<p>' + PLAYER_NAMES[s.winner] + ' 的手牌：</p>';
+            html += '<div class="win-hand">';
+            const winHand = s.hands[s.winner].slice().sort((a, b) => a - b);
+            for (const t of winHand) {
+                const [tn, n] = tileTypeIdx(t);
+                const type = typeFromNum(tn);
+                const info = TILE_TYPES[type];
+                html += '<div class="win-tile ' + type + '"><span class="win-emoji">' + info.emojis[n-1] + '</span><span class="win-label">' + info.tiles[n-1] + '</span></div>';
+            }
+            html += '</div>';
+
+            if (s.winner === s.humanPlayer) {
+                html += '<p style="color:var(--gold);font-size:1.2em;font-weight:700">🎉 恭喜你赢了！</p>';
+            } else {
+                // Show all hands
+                html += '<hr style="margin:16px 0;border-color:rgba(255,255,255,0.15)">';
+                for (let p = 0; p < 4; p++) {
+                    if (p === s.winner) continue;
+                    html += '<p style="color:#aaa;font-size:13px">' + PLAYER_NAMES[p] + '：</p>';
+                    html += '<div class="win-hand" style="margin:8px 0">';
+                    const ph = s.hands[p].slice().sort((a, b) => a - b);
+                    for (const t of ph) {
+                        const [tn, n] = tileTypeIdx(t);
+                        const type = typeFromNum(tn);
+                        const info = TILE_TYPES[type];
+                        html += '<div class="win-tile ' + type + '" style="width:32px;height:44px;border-width:1px"><span class="win-emoji" style="font-size:18px">' + info.emojis[n-1] + '</span></div>';
+                    }
+                    html += '</div>';
+                }
+            }
+        } else {
+            // Draw - show all hands
+            html += '<hr style="margin:16px 0;border-color:rgba(255,255,255,0.15)">';
+            for (let p = 0; p < 4; p++) {
+                html += '<p style="color:#aaa;font-size:13px">' + PLAYER_NAMES[p] + '：</p>';
+                html += '<div class="win-hand" style="margin:8px 0">';
+                const ph = s.hands[p].slice().sort((a, b) => a - b);
+                for (const t of ph) {
+                    const [tn, n] = tileTypeIdx(t);
+                    const type = typeFromNum(tn);
+                    const info = TILE_TYPES[type];
+                    html += '<div class="win-tile ' + type + '" style="width:32px;height:44px;border-width:1px"><span class="win-emoji" style="font-size:18px">' + info.emojis[n-1] + '</span></div>';
+                }
+                html += '</div>';
+            }
+        }
+
+        html += '<div style="margin-top:20px"><button class="btn" onclick="simCloseOverlay()">继续</button></div>';
+        html += '</div></div>';
+
+        // Remove existing overlay
+        const existing = document.querySelector('.sim-win-overlay');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', html);
+        simRender();
+    }
+
+    function simCloseOverlay(e) {
+        if (e && e.target && e.target.closest && !e.target.closest('.sim-win-dialog')) return;
+        const overlay = document.querySelector('.sim-win-overlay');
+        if (overlay) overlay.remove();
+    }
+
+    // ---- Helpers ----
+    function simTileEmoji(tileIdx) {
+        const [tn, n] = tileTypeIdx(tileIdx);
+        const type = typeFromNum(tn);
+        return TILE_TYPES[type].emojis[n - 1];
+    }
+
+    function simSetMsg(html) {
+        document.getElementById('simMsg').innerHTML = html;
+    }
+    </script>
+</body>
+</html>
